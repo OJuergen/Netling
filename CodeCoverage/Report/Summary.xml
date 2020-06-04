@@ -1,21 +1,21 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <CoverageReport scope="Summary">
   <Summary>
-    <Generatedon>04.06.2020 - 13:57:25</Generatedon>
+    <Generatedon>04.06.2020 - 17:12:39</Generatedon>
     <Parser>OpenCoverParser</Parser>
     <Assemblies>3</Assemblies>
     <Classes>30</Classes>
     <Files>26</Files>
-    <Coveredlines>212</Coveredlines>
-    <Uncoveredlines>1893</Uncoveredlines>
-    <Coverablelines>2105</Coverablelines>
-    <Totallines>3650</Totallines>
-    <Linecoverage>10</Linecoverage>
+    <Coveredlines>196</Coveredlines>
+    <Uncoveredlines>1929</Uncoveredlines>
+    <Coverablelines>2125</Coverablelines>
+    <Totallines>3683</Totallines>
+    <Linecoverage>9.2</Linecoverage>
     <Coveredbranches>0</Coveredbranches>
     <Totalbranches>0</Totalbranches>
   </Summary>
   <Coverage>
-    <Assembly name="Networking" classes="21" coverage="8.9" coveredlines="167" coverablelines="1867" totallines="3591" branchcoverage="" coveredbranches="0" totalbranches="0">
+    <Assembly name="Networking" classes="21" coverage="8.1" coveredlines="153" coverablelines="1874" totallines="3603" branchcoverage="" coveredbranches="0" totalbranches="0">
       <Class name="Networking.Client" coverage="0" coveredlines="0" coverablelines="343" totallines="514" branchcoverage="" coveredbranches="0" totalbranches="0" />
       <Class name="Networking.ClientRunner" coverage="11.7" coveredlines="4" coverablelines="34" totallines="61" branchcoverage="" coveredbranches="0" totalbranches="0" />
       <Class name="Networking.GameAction" coverage="0" coveredlines="0" coverablelines="1" totallines="129" branchcoverage="" coveredbranches="0" totalbranches="0" />
@@ -25,22 +25,22 @@
       <Class name="Networking.NetAsset" coverage="0" coveredlines="0" coverablelines="118" totallines="229" branchcoverage="" coveredbranches="0" totalbranches="0" />
       <Class name="Networking.NetAssetManager" coverage="0" coveredlines="0" coverablelines="7" totallines="21" branchcoverage="" coveredbranches="0" totalbranches="0" />
       <Class name="Networking.NetBehaviour" coverage="1.6" coveredlines="1" coverablelines="62" totallines="208" branchcoverage="" coveredbranches="0" totalbranches="0" />
-      <Class name="Networking.NetException" coverage="0" coveredlines="0" coverablelines="4" totallines="16" branchcoverage="" coveredbranches="0" totalbranches="0" />
+      <Class name="Networking.NetException" coverage="50" coveredlines="2" coverablelines="4" totallines="16" branchcoverage="" coveredbranches="0" totalbranches="0" />
       <Class name="Networking.NetObject" coverage="5.3" coveredlines="5" coverablelines="94" totallines="157" branchcoverage="" coveredbranches="0" totalbranches="0" />
       <Class name="Networking.NetObjectManager" coverage="26.7" coveredlines="58" coverablelines="217" totallines="392" branchcoverage="" coveredbranches="0" totalbranches="0" />
       <Class name="Networking.PredictedFloat" coverage="0" coveredlines="0" coverablelines="6" totallines="95" branchcoverage="" coveredbranches="0" totalbranches="0" />
-      <Class name="Networking.PredictedQuaternion" coverage="100" coveredlines="13" coverablelines="13" totallines="95" branchcoverage="" coveredbranches="0" totalbranches="0" />
-      <Class name="Networking.PredictedValue[T]" coverage="69.5" coveredlines="16" coverablelines="23" totallines="95" branchcoverage="" coveredbranches="0" totalbranches="0" />
+      <Class name="Networking.PredictedQuaternion" coverage="0" coveredlines="0" coverablelines="13" totallines="95" branchcoverage="" coveredbranches="0" totalbranches="0" />
+      <Class name="Networking.PredictedValue[T]" coverage="0" coveredlines="0" coverablelines="23" totallines="95" branchcoverage="" coveredbranches="0" totalbranches="0" />
       <Class name="Networking.PredictedVector3" coverage="0" coveredlines="0" coverablelines="6" totallines="95" branchcoverage="" coveredbranches="0" totalbranches="0" />
-      <Class name="Networking.Server" coverage="13.2" coveredlines="67" coverablelines="506" totallines="742" branchcoverage="" coveredbranches="0" totalbranches="0" />
+      <Class name="Networking.Server" coverage="15.5" coveredlines="80" coverablelines="513" totallines="754" branchcoverage="" coveredbranches="0" totalbranches="0" />
       <Class name="Networking.ServerRunner" coverage="9" coveredlines="3" coverablelines="33" totallines="61" branchcoverage="" coveredbranches="0" totalbranches="0" />
       <Class name="Networking.StreamExtension" coverage="0" coveredlines="0" coverablelines="104" totallines="152" branchcoverage="" coveredbranches="0" totalbranches="0" />
       <Class name="Networking.SyncAnimator" coverage="0" coveredlines="0" coverablelines="112" totallines="177" branchcoverage="" coveredbranches="0" totalbranches="0" />
       <Class name="Networking.SyncTransform" coverage="0" coveredlines="0" coverablelines="111" totallines="188" branchcoverage="" coveredbranches="0" totalbranches="0" />
     </Assembly>
-    <Assembly name="NetworkingEditorTests" classes="2" coverage="100" coveredlines="43" coverablelines="43" totallines="105" branchcoverage="" coveredbranches="0" totalbranches="0">
-      <Class name="Networking.Tests.PredictedQuaternionTest" coverage="100" coveredlines="15" coverablelines="15" totallines="49" branchcoverage="" coveredbranches="0" totalbranches="0" />
-      <Class name="Networking.Tests.ServerTest" coverage="100" coveredlines="28" coverablelines="28" totallines="56" branchcoverage="" coveredbranches="0" totalbranches="0" />
+    <Assembly name="NetworkingEditorTests" classes="2" coverage="73.2" coveredlines="41" coverablelines="56" totallines="126" branchcoverage="" coveredbranches="0" totalbranches="0">
+      <Class name="Networking.Tests.PredictedQuaternionTest" coverage="0" coveredlines="0" coverablelines="15" totallines="49" branchcoverage="" coveredbranches="0" totalbranches="0" />
+      <Class name="Networking.Tests.ServerTest" coverage="100" coveredlines="41" coverablelines="41" totallines="77" branchcoverage="" coveredbranches="0" totalbranches="0" />
     </Assembly>
     <Assembly name="NetworkingSamples" classes="7" coverage="1" coveredlines="2" coverablelines="195" totallines="368" branchcoverage="" coveredbranches="0" totalbranches="0">
       <Class name="Networking.Samples.ClientIMGUI" coverage="2.7" coveredlines="1" coverablelines="36" totallines="74" branchcoverage="" coveredbranches="0" totalbranches="0" />

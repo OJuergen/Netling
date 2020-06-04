@@ -1,5 +1,7 @@
 ﻿using System;
+using NSubstitute;
 using NUnit.Framework;
+using Unity.Networking.Transport;
 
 namespace Networking.Tests
 {
@@ -21,8 +23,10 @@ namespace Networking.Tests
 
         private static void StartTestServer()
         {
+            var networkInterface = Substitute.For<INetworkInterface>();
             Server.Instance.Init(new ushort[] {9099}, 100, true, false);
-            Server.Instance.Start();
+            var serverDriver = new NetworkDriver(networkInterface, new NetworkDataStreamParameter {size = 64});
+            Server.Instance.Start(serverDriver);
         }
 
         [Test]
@@ -30,6 +34,23 @@ namespace Networking.Tests
         {
             StartTestServer();
             Assert.True(Server.IsActive);
+        }
+
+        [Test]
+        public void ShouldFailToBindToPort()
+        {
+            var networkInterface = Substitute.For<INetworkInterface>();
+            networkInterface.Bind(Arg.Any<NetworkInterfaceEndPoint>()).Returns(-1);
+            Server.Instance.Init(new ushort[] {9099}, 100, true, false);
+            var serverDriver = new NetworkDriver(networkInterface, new NetworkDataStreamParameter {size = 64});
+            Assert.Throws<NetException>(() => Server.Instance.Start(serverDriver));
+        }
+
+        [Test]
+        public void ShouldNotStartServerTwice()
+        {
+            StartTestServer();
+            Assert.Throws<InvalidOperationException>(() => Server.Instance.Start());
         }
 
         [Test]

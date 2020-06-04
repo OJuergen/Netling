@@ -67,21 +67,33 @@ namespace Networking
 
         public void Start()
         {
-            if (IsActive)
-                throw new InvalidOperationException("Cannot start server: is already active");
-
-            if (!_initialized)
-                throw new InvalidOperationException("Cannot start server: not initialized. You must call Init() first");
-
 //            _serverDriver = new UdpNetworkDriver(new ReliableUtility.Parameters {WindowSize = 32});
-            if (_serverDriver.IsCreated) _serverDriver.Dispose();
-            _serverDriver = new NetworkDriver(new UDPNetworkInterface(), new SimulatorUtility.Parameters
+            var serverDriver = new NetworkDriver(new UDPNetworkInterface(), new SimulatorUtility.Parameters
             {
                 MaxPacketCount = 30,
                 PacketDropPercentage = 5,
                 MaxPacketSize = 256,
                 PacketDelayMs = 50
             }, new ReliableUtility.Parameters {WindowSize = 32});
+            Start(serverDriver);
+        }
+
+        public void Start(NetworkDriver serverDriver)
+        {
+            if (IsActive)
+            {
+                serverDriver.Dispose();
+                throw new InvalidOperationException("Cannot start server: is already active");
+            }
+
+            if (!_initialized)
+            {
+                serverDriver.Dispose();
+                throw new InvalidOperationException("Cannot start server: not initialized. You must call Init() first");
+            }
+
+            if (_serverDriver.IsCreated) _serverDriver.Dispose();
+            _serverDriver = serverDriver;
             _unreliablePipeline = _useSimulationPipeline
                 ? _serverDriver.CreatePipeline(typeof(SimulatorPipelineStage))
                 : NetworkPipeline.Null;
@@ -102,10 +114,10 @@ namespace Networking
 
             if (State != ServerState.Started)
             {
-                Debug.LogException(new NetException("Failed to bind to any port"));
                 _connections.Dispose();
                 _serverDriver.Dispose();
                 Application.Quit(-1);
+                throw new NetException("Failed to bind to any port");
             }
         }
 
