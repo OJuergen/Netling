@@ -5,6 +5,13 @@ namespace Networking.Tests
 {
     public class ServerTest
     {
+        [SetUp]
+        public void SetUp()
+        {
+            if (Server.IsActive) Server.Instance.Stop();
+            Server.Instance.Dispose();
+        }
+
         [Test]
         public void ShouldStartServer()
         {

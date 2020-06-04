@@ -730,6 +730,8 @@ namespace Networking
         {
             ReleaseUnmanagedResources();
             GC.SuppressFinalize(this);
+            _initialized = false;
+            _instance = null;
         }
 
         ~Server()
