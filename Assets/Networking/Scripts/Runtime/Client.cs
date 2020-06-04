@@ -155,7 +155,9 @@ namespace Networking
                             float serverTime = streamReader.ReadFloat();
                             float serverDeltaTime = streamReader.ReadFloat();
                             RoundTripTime = Time.time - sendLocalTime;
-                            Latency = Mathf.Max(0, (RoundTripTime - serverDeltaTime / 2 - Time.deltaTime / 2) / 2);
+                            Latency = IsHost
+                                ? 0
+                                : Mathf.Max(0, (RoundTripTime - serverDeltaTime / 2 - Time.deltaTime / 2) / 2);
                             // estimated server time NOW is received serverTime + latency for one trip + average frame wait on client side
                             float serverTimeOffset = serverTime - Time.time + Latency + Time.deltaTime / 2;
                             _averageServerTimeOffset = Mathf.Abs(_averageServerTimeOffset - serverTime) > 0.5f
