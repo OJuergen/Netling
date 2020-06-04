@@ -13,9 +13,4 @@ MonoBehaviour:
   m_Name: GameActionManager
   m_EditorClassIdentifier: 
   _assets:
-  - {fileID: 11400000, guid: f5ab44d13decd744f8d3e432225ccb7a, type: 2}
-  - {fileID: 11400000, guid: 1b4a4d52f2fe4c9429cac4fd07530c1b, type: 2}
-  - {fileID: 11400000, guid: ec88662c0921bb94d966e8d8d26f7479, type: 2}
   - {fileID: 11400000, guid: ab2599adba20ccd488d6487e33de09b4, type: 2}
-  - {fileID: 11400000, guid: 15c94868355ee76408c418567e2ee00c, type: 2}
-  - {fileID: 11400000, guid: 355bd48742ee6a94f9596d8d0314d4c0, type: 2}
