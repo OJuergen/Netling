@@ -5,7 +5,6 @@ namespace Networking.Samples
     public class SampleRunner : MonoBehaviour
     {
         [SerializeField] private Player _playerPrefab;
-        [SerializeField] private NetObjectManager _netObjectManager;
         [SerializeField] private int _targetFrameRate = 200;
 
         private void Start()

@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 2495518690919460920}
   - component: {fileID: 2495518690919460923}
   m_Layer: 0
-  m_Name: GameRunner
+  m_Name: SampleGameRunner
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -45,6 +45,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _playerPrefab: {fileID: 1460840943048193035, guid: 3608ca3daecbf40438df66a0b1ce22af,
     type: 3}
-  _networkObjectManager: {fileID: 11400000, guid: 120646e1b2b2e154fbdcdb951369c3e9,
-    type: 2}
-  _targetFrameRate: 200
+  _targetFrameRate: 60

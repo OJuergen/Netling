@@ -89,5 +89,10 @@ PrefabInstance:
       propertyPath: _acceptAllPlayers
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 7031525839875081324, guid: 265d66e32388c22479f830af02d1097b,
+        type: 3}
+      propertyPath: _minPort
+      value: 9099
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 265d66e32388c22479f830af02d1097b, type: 3}

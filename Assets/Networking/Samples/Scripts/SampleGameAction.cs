@@ -37,6 +37,11 @@ namespace Networking.Samples
             Trigger(new Parameters(_number), _actorNumber);
         }
 
+        public void Trigger(int number)
+        {
+            Trigger(new Parameters(number), _actorNumber);
+        }
+
         protected override bool IsValid(Parameters parameters, int actorNumber, float triggerTime)
         {
             return parameters.Number % 2 == 0;
@@ -44,17 +49,17 @@ namespace Networking.Samples
 
         protected override void Execute(Parameters parameters, int actorNumber, float triggerTime)
         {
-            Debug.Log($"Execute {parameters.Number} for {actorNumber}");
+            Debug.Log($"Execute {parameters.Number} for actor {actorNumber}");
         }
 
         protected override void Deny(Parameters parameters, int actorNumber, float triggerTime)
         {
-            Debug.Log($"Deny {parameters.Number} for {actorNumber}");
+            Debug.Log($"Deny {parameters.Number} for actor {actorNumber}");
         }
 
         protected override void Rollback(Parameters parameters, int actorNumber, float triggerTime)
         {
-            Debug.Log($"Rollback {parameters.Number} for {actorNumber}");
+            Debug.Log($"Rollback {parameters.Number} for actor {actorNumber}");
         }
 
         [MufflonRPC]

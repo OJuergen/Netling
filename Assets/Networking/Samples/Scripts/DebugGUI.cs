@@ -48,10 +48,16 @@ namespace Networking.Samples
             }
             GUILayout.TextArea($"RTT: {_rtt * 1000:0.00} ms\nLAT: {_latency * 1000:0.00} ms");
 
-            if (GUILayout.Button("SampleGameAction("))
+            if (GUILayout.Button("SampleGameAction(1)"))
             {
                 var gameAction = _gameActionManager.Get<SampleGameAction>();
-                if (gameAction != null) gameAction.Trigger();
+                if (gameAction != null) gameAction.Trigger(1);
+            }
+
+            if (GUILayout.Button("SampleGameAction(2)"))
+            {
+                var gameAction = _gameActionManager.Get<SampleGameAction>();
+                if (gameAction != null) gameAction.Trigger(2);
             }
         }
     }

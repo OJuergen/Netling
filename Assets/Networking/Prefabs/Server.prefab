@@ -43,11 +43,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3858543997494a94ea3f0e91c51e35cb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _port: 9099
+  _minPort: 9000
+  _maxPort: 9099
   _clientConnectionTimeout: 30
+  _acceptAllPlayers: 0
   _useSimulationPipeline: 0
-  _networkObjectManager: {fileID: 11400000, guid: 120646e1b2b2e154fbdcdb951369c3e9,
-    type: 2}
-  _networkObjectUpdateRate: 20
+  _netObjectUpdateRate: 20
+  _netAssetUpdateRate: 20
   _gameActionManager: {fileID: 11400000, guid: 49e6e14beca6f3c459ea861e68858582, type: 2}
   _autoStart: 0
