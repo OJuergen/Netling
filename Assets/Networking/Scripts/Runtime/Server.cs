@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using JetBrains.Annotations;
 using Unity.Collections;
 using Unity.Networking.Transport;
 using Unity.Networking.Transport.Utilities;
@@ -34,7 +33,6 @@ namespace Networking
         private NetworkDriver _serverDriver;
         private NativeList<NetworkConnection> _connections;
         private float _clientConnectionTimeout;
-        private GameActionManager _gameActionManager;
 
         private readonly Dictionary<NetworkConnection, float> _lastPingTimes =
             new Dictionary<NetworkConnection, float>();
@@ -57,10 +55,9 @@ namespace Networking
         public event PlayerDataDelegate PlayerDataReceived;
 
         public void Init(ushort[] ports, float clientConnectionTimeout, bool acceptAllPlayers,
-                         bool useSimulationPipeline, [NotNull] GameActionManager gameActionManager)
+                         bool useSimulationPipeline)
         {
             _clientConnectionTimeout = clientConnectionTimeout;
-            _gameActionManager = gameActionManager;
             _endPoint = NetworkEndPoint.AnyIpv4;
             _ports = ports;
             _acceptAllPlayers = acceptAllPlayers;
@@ -276,7 +273,7 @@ namespace Networking
                         float triggerTime = streamReader.ReadFloat();
                         try
                         {
-                            GameAction gameAction = _gameActionManager.Get(gameActionID);
+                            GameAction gameAction = GameActionManager.Instance.Get(gameActionID);
                             GameAction.IParameters parameters =
                                 gameAction.DeserializeParameters(ref streamReader);
                             gameAction.ReceiveOnServer(parameters, actorNumber, senderActorNumber,
@@ -652,7 +649,7 @@ namespace Networking
 
             var streamWriter = new DataStreamWriter(MaxBytesPerMessage, Allocator.Temp);
             streamWriter.WriteInt(Commands.GameAction);
-            streamWriter.WriteInt(_gameActionManager.GetID(gameAction));
+            streamWriter.WriteInt(GameActionManager.Instance.GetID(gameAction));
             streamWriter.WriteInt(actorNumber);
             streamWriter.WriteFloat(triggerTime);
             streamWriter.WriteBool(true); // valid
@@ -675,7 +672,7 @@ namespace Networking
 
             var streamWriter = new DataStreamWriter(MaxBytesPerMessage, Allocator.Temp);
             streamWriter.WriteInt(Commands.GameAction);
-            streamWriter.WriteInt(_gameActionManager.GetID(gameAction));
+            streamWriter.WriteInt(GameActionManager.Instance.GetID(gameAction));
             streamWriter.WriteInt(actorNumber);
             streamWriter.WriteFloat(triggerTime);
             streamWriter.WriteBool(false); // invalid

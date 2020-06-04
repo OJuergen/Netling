@@ -13,7 +13,6 @@ namespace Networking
         [SerializeField] private bool _useSimulationPipeline;
         [SerializeField] private float _netObjectUpdateRate = 20;
         [SerializeField] private float _netAssetUpdateRate = 20;
-        [SerializeField] private GameActionManager _gameActionManager;
         [SerializeField] private bool _autoStart;
 
         private float _lastNetObjectUpdateTime;
@@ -26,8 +25,7 @@ namespace Networking
             ushort[] ports = Enumerable.Range(_minPort, _maxPort - _minPort + 1)
                 .Select(port => (ushort) port)
                 .ToArray();
-            Server.Instance.Init(ports, _clientConnectionTimeout, _acceptAllPlayers, _useSimulationPipeline,
-                _gameActionManager);
+            Server.Instance.Init(ports, _clientConnectionTimeout, _acceptAllPlayers, _useSimulationPipeline);
             if (_autoStart) Server.Instance.Start();
         }
 
