@@ -68,16 +68,10 @@ namespace Networking
         public void Start()
         {
             if (IsActive)
-            {
-                Debug.LogWarning("Cannot start server: is already active");
-                return;
-            }
+                throw new InvalidOperationException("Cannot start server: is already active");
 
             if (!_initialized)
-            {
-                Debug.LogWarning("Cannot start server: not initialized. You must call Init() first");
-                return;
-            }
+                throw new InvalidOperationException("Cannot start server: not initialized. You must call Init() first");
 
 //            _serverDriver = new UdpNetworkDriver(new ReliableUtility.Parameters {WindowSize = 32});
             if (_serverDriver.IsCreated) _serverDriver.Dispose();
@@ -127,11 +121,7 @@ namespace Networking
 
         public void Stop()
         {
-            if (!IsActive)
-            {
-                Debug.LogWarning("Cannot stop server: is not active");
-            }
-
+            AssertActive();
             Debug.Log("Stopping server...");
             UnspawnNetObjects(NetObjectManager.Instance.NetObjects);
             foreach (NetworkConnection networkConnection in _connections)
