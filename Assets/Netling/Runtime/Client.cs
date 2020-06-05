@@ -4,7 +4,7 @@ using Unity.Networking.Transport;
 using Unity.Networking.Transport.Utilities;
 using UnityEngine;
 
-namespace Networking
+namespace Netling
 {
     public class Client : IDisposable
     {

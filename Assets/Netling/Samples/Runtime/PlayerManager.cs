@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using JetBrains.Annotations;
 using UnityEngine;
 
-namespace Networking.Samples
+namespace Netling.Samples
 {
     public class PlayerManager
     {

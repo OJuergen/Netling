@@ -1,4 +1,4 @@
-namespace Networking
+namespace Netling
 {
     public struct MessageInfo
     {

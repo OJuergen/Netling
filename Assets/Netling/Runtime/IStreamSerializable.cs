@@ -1,6 +1,6 @@
 using Unity.Networking.Transport;
 
-namespace Networking
+namespace Netling
 {
     public interface IStreamSerializable
     {

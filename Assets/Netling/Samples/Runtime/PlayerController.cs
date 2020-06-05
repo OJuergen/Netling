@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Networking.Samples
+namespace Netling.Samples
 {
     [RequireComponent(typeof(Player))]
     public sealed class PlayerController : MonoBehaviour

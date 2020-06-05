@@ -4,7 +4,7 @@ using Unity.Collections;
 using Unity.Networking.Transport;
 using UnityEngine;
 
-namespace Networking
+namespace Netling
 {
     public static class StreamExtension
     {

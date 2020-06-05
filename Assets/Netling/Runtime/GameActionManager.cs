@@ -1,7 +1,7 @@
 ﻿using MufflonUtil;
 using UnityEngine;
 
-namespace Networking
+namespace Netling
 {
     [CreateAssetMenu(menuName = "Networking/Game Action Manager")]
     public class GameActionManager : SingletonAssetManager<GameActionManager, GameAction>

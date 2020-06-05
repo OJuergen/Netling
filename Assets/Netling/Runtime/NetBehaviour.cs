@@ -4,7 +4,7 @@ using MufflonUtil;
 using Unity.Networking.Transport;
 using UnityEngine;
 
-namespace Networking
+namespace Netling
 {
     /// <summary>
     /// A networked <see cref="MonoBehaviour"/> with synchronized data and RPC capability.

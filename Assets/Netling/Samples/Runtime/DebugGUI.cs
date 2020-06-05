@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace Networking.Samples
+namespace Netling.Samples
 {
     public sealed class DebugGUI : MonoBehaviour
     {

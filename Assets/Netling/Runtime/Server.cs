@@ -6,7 +6,7 @@ using Unity.Networking.Transport.Utilities;
 using UnityEngine;
 using UnityEngine.Profiling;
 
-namespace Networking
+namespace Netling
 {
     public class Server : IDisposable
     {

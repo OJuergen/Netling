@@ -1,4 +1,4 @@
-namespace Networking
+namespace Netling
 {
     public static class Commands
     {

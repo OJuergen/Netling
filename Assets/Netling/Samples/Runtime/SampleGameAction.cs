@@ -4,7 +4,7 @@ using Unity.Networking.Transport;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
-namespace Networking.Samples
+namespace Netling.Samples
 {
     [CreateAssetMenu(menuName = "Networking/Sample Game Action")]
     public class SampleGameAction : GameAction<SampleGameAction.Parameters>

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Networking.Samples
+namespace Netling.Samples
 {
     public class SampleRunner : MonoBehaviour
     {

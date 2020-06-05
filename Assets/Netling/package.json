@@ -6,7 +6,7 @@
   "description": "High-level networking library based on the new Unity transport package.",
   "type": "library",
   "dependencies": {
-    "com.mufflonzucht.mufflonutil": "0.1.1",
+    "com.mufflonzucht.mufflonutil": "0.2.0",
     "com.unity.transport": "0.3.1-preview.4"
   }
 }

@@ -1,6 +1,6 @@
 using System;
 
-namespace Networking
+namespace Netling
 {
     /// <summary>
     /// Exception thrown for errors during Network communication.

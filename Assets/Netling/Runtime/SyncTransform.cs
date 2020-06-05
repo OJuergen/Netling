@@ -2,7 +2,7 @@
 using Unity.Networking.Transport;
 using UnityEngine;
 
-namespace Networking
+namespace Netling
 {
     public class SyncTransform : NetBehaviour
     {

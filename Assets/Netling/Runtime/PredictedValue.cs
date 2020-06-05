@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace Networking
+namespace Netling
 {
     public abstract class PredictedValue<T>
     {

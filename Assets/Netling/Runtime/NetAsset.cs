@@ -7,7 +7,7 @@ using MufflonUtil;
 using Unity.Networking.Transport;
 using UnityEngine;
 
-namespace Networking
+namespace Netling
 {
     public abstract class NetAsset : ManagedAsset, IDirtyMaskProvider
     {

@@ -1,15 +1,23 @@
 ﻿using System;
+using System.Linq;
+using MufflonUtil;
 using NSubstitute;
 using NUnit.Framework;
 using Unity.Networking.Transport;
+using UnityEditor;
 
-namespace Networking.Tests
+namespace Netling.Tests
 {
     public class ServerTest
     {
         [TearDown]
         public void TearDown()
         {
+            foreach (string path in AssetDatabase.FindAssets("t:ScriptableObjectSingleton")
+                .Select(AssetDatabase.GUIDToAssetPath))
+            {
+                AssetDatabase.LoadAssetAtPath<ScriptableObjectSingleton>(path);
+            }
             if (Server.IsActive) Server.Instance.Stop();
             Server.Instance.Dispose();
         }

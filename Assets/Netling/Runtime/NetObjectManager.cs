@@ -10,7 +10,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace Networking
+namespace Netling
 {
     [CreateAssetMenu(menuName = "Network Object Manager")]
     public sealed class NetObjectManager : ScriptableObjectSingleton<NetObjectManager>

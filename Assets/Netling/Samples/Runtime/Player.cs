@@ -1,4 +1,4 @@
-namespace Networking.Samples
+namespace Netling.Samples
 {
     public sealed class Player : NetBehaviour
     {

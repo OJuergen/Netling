@@ -3,7 +3,7 @@ using MufflonUtil;
 using Unity.Networking.Transport;
 using UnityEngine;
 
-namespace Networking
+namespace Netling
 {
     public sealed class NetObject : MonoBehaviour
     {

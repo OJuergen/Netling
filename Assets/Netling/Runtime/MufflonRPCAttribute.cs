@@ -1,6 +1,6 @@
 using System;
 
-namespace Networking
+namespace Netling
 {
     [AttributeUsage(AttributeTargets.Method)]
     public class MufflonRPCAttribute : Attribute

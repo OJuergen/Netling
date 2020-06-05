@@ -2,7 +2,7 @@
 using System.Linq;
 using UnityEngine;
 
-namespace Networking
+namespace Netling
 {
     public class ServerRunner : MonoBehaviour
     {

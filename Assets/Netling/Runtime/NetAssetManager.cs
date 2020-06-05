@@ -1,7 +1,7 @@
 ﻿using MufflonUtil;
 using UnityEngine;
 
-namespace Networking
+namespace Netling
 {
     [CreateAssetMenu(menuName = "Networking/Net Asset Manager")]
     public sealed class NetAssetManager : AssetManager<NetAssetManager, NetAsset>

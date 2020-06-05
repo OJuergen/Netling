@@ -1,11 +1,9 @@
 {
-    "name": "NetworkingSamples",
+    "name": "Netling.Samples",
     "references": [
         "GUID:1b6b778c06516f34ebcf355063a3066d",
         "GUID:95bff287bccaff940aa7eedfe374aa0d",
-        "GUID:f2d49d9fa7e7eb3418e39723a7d3b92f",
-        "GUID:560b04d1a97f54a4e82edc0cbbb69285",
-        "GUID:f51ebe6a0ceec4240a699833d6309b23"
+        "GUID:f2d49d9fa7e7eb3418e39723a7d3b92f"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
