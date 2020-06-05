@@ -124,7 +124,7 @@ namespace Networking
             _objectCount = 0;
             _nextId = 0;
             Client.Instance.Disconnected += OnDisconnectedFromServer;
-            Server.Instance.PlayerDisconnected += OnPlayerDisconnected;
+            Server.Instance.ClientDisconnected += OnClientDisconnected;
             PrepareRPCDelegates();
 #if UNITY_EDITOR
             AssetPostProcessor.ImportedPrefab += OnImportedPrefab;
@@ -136,7 +136,7 @@ namespace Networking
         {
             base.OnDisable();
             Client.Instance.Disconnected -= OnDisconnectedFromServer;
-            Server.Instance.PlayerDisconnected -= OnPlayerDisconnected;
+            Server.Instance.ClientDisconnected -= OnClientDisconnected;
 #if UNITY_EDITOR
             AssetPostProcessor.ImportedPrefab -= OnImportedPrefab;
             AssetPostProcessor.DeletedAsset -= OnDeletedPrefab;
@@ -257,7 +257,7 @@ namespace Networking
             return messageInfo => _rpcDelegates[rpcid].Invoke(netBehaviour, messageInfo, arguments);
         }
 
-        private void OnPlayerDisconnected(int actorNumber)
+        private void OnClientDisconnected(int actorNumber)
         {
             Server.Instance.UnspawnNetObjects(NetObjects
                 .Where(netObject => netObject.OwnerActorNumber == actorNumber)

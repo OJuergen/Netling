@@ -49,9 +49,9 @@ namespace Networking
         public delegate void PlayerDataDelegate(int actorNumber, string playerData);
 
         public event Action Stopped;
+        public event ConnectionDelegate ClientConnected;
+        public event ConnectionDelegate ClientDisconnected;
         public event ConnectionDelegate PlayerAccepted;
-
-        public event ConnectionDelegate PlayerDisconnected;
         public event PlayerDataDelegate PlayerDataReceived;
 
         public void Init(ushort[] ports, float clientConnectionTimeout, bool acceptAllPlayers,
@@ -149,6 +149,9 @@ namespace Networking
 
         public void Tick()
         {
+            if (!_serverDriver.IsCreated) return;
+            _serverDriver.ScheduleUpdate().Complete();
+
             // Accept all new connections
             while (true)
             {
@@ -163,7 +166,7 @@ namespace Networking
                 writer.WriteInt(Commands.AssignActorNumber);
                 writer.WriteInt(connection.InternalId);
                 _serverDriver.EndSend(writer);
-                return;
+                ClientConnected?.Invoke(connection.InternalId);
             }
 
             // process open connections
@@ -175,7 +178,7 @@ namespace Networking
                 {
                     connection.Disconnect(_serverDriver);
                     Debug.LogWarning($"Disconnecting client {connection.InternalId} due to timeout");
-                    PlayerDisconnected?.Invoke(connection.InternalId);
+                    ClientDisconnected?.Invoke(connection.InternalId);
                     _connections.RemoveAtSwapBack(i);
                     continue;
                 }
@@ -192,15 +195,13 @@ namespace Networking
                     else if (eventType == NetworkEvent.Type.Disconnect)
                     {
                         Debug.Log($"Client {connection.InternalId} disconnected");
-                        PlayerDisconnected?.Invoke(connection.InternalId);
+                        ClientDisconnected?.Invoke(connection.InternalId);
                         _connections.RemoveAtSwapBack(i);
                         if (i >= _connections.Length)
                             break;
                     }
                 }
             }
-
-            _serverDriver.ScheduleUpdate().Complete();
         }
 
         private void ReadDataEvent(NetworkConnection connection, DataStreamReader streamReader)
@@ -363,7 +364,7 @@ namespace Networking
                 NetworkConnection connection = _connections[i];
                 if (connection.InternalId != actorNumber) continue;
                 Debug.Log($"Kicking client {actorNumber}");
-                PlayerDisconnected?.Invoke(actorNumber);
+                ClientDisconnected?.Invoke(actorNumber);
                 connection.Disconnect(_serverDriver);
                 _connections.RemoveAtSwapBack(i);
                 return;
@@ -381,7 +382,7 @@ namespace Networking
             foreach (NetworkConnection connection in _connections)
             {
                 connection.Disconnect(_serverDriver);
-                PlayerDisconnected?.Invoke(connection.InternalId);
+                ClientDisconnected?.Invoke(connection.InternalId);
             }
 
             _connections.Clear();

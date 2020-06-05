@@ -12,7 +12,6 @@ namespace Networking
         [SerializeField] private float _timeout = 30;
         [SerializeField] private float _netObjectUpdateRate = 20;
         [SerializeField] private float _pingRate = 10;
-        [SerializeField] private GameActionManager _gameActionManager;
 
         private float _lastNetObjectUpdateTime;
         private float _lastPingTime;
@@ -21,7 +20,7 @@ namespace Networking
         {
             _lastPingTime = Time.time;
             _lastNetObjectUpdateTime = Time.time;
-            Client.Instance.Init(_ip, _port, _useLocalhost, _timeout, _useSimulationPipeline, _gameActionManager);
+            Client.Instance.Init(_ip, _port, _useLocalhost, _timeout, _useSimulationPipeline);
             if (_autoConnect) Client.Instance.Connect();
         }
 

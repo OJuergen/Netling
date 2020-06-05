@@ -7,13 +7,6 @@ namespace Networking.Tests
 {
     public class ServerTest
     {
-        [SetUp]
-        public void SetUp()
-        {
-            if (Server.IsActive) Server.Instance.Stop();
-            Server.Instance.Dispose();
-        }
-
         [TearDown]
         public void TearDown()
         {
@@ -21,19 +14,56 @@ namespace Networking.Tests
             Server.Instance.Dispose();
         }
 
-        private static void StartTestServer()
+        [Test]
+        public void ShouldStartServer()
         {
             var networkInterface = Substitute.For<INetworkInterface>();
             Server.Instance.Init(new ushort[] {9099}, 100, true, false);
             var serverDriver = new NetworkDriver(networkInterface, new NetworkDataStreamParameter {size = 64});
             Server.Instance.Start(serverDriver);
+            Assert.True(Server.IsActive);
+            Assert.True(serverDriver.Listening);
         }
 
         [Test]
-        public void ShouldStartServer()
+        public void ShouldAcceptConnection()
         {
-            StartTestServer();
-            Assert.True(Server.IsActive);
+            Server.Instance.Init(new ushort[] {9099}, 100, true, false);
+            var serverDriver = new NetworkDriver(new IPCNetworkInterface(), new NetworkDataStreamParameter {size = 64});
+            Server.Instance.Start(serverDriver);
+
+            // send out connection request
+            var clientDriver = new NetworkDriver(new IPCNetworkInterface(), new NetworkDataStreamParameter {size = 64});
+            NetworkConnection networkConnection = clientDriver.Connect(serverDriver.LocalEndPoint());
+            Assert.True(networkConnection != default);
+            clientDriver.ScheduleUpdate().Complete();
+
+            var numberOfConnectedClients = 0;
+            var onClientConnected = new Server.ConnectionDelegate(id => numberOfConnectedClients++);
+            Server.Instance.ClientConnected += onClientConnected;
+            Server.Instance.Tick();
+            Assert.AreEqual(1, numberOfConnectedClients);
+            Server.Instance.ClientConnected -= onClientConnected;
+
+            if (clientDriver.IsCreated) clientDriver.Dispose();
+        }
+        
+        [Test]
+        public void ShouldHandleDisconnection()
+        {
+            // start server
+            Server.Instance.Init(new ushort[] {9099}, 100, true, false);
+            Server.Instance.Start();
+
+            // connect
+            Client.Instance.Init(null, 9099, true, 100, false);
+            Client.Instance.Connect();
+            Server.Instance.Tick();
+            Client.Instance.Tick();
+            
+            // disconnect
+            Client.Instance.Disconnect();
+            Server.Instance.Tick();
         }
 
         [Test]
@@ -49,14 +79,20 @@ namespace Networking.Tests
         [Test]
         public void ShouldNotStartServerTwice()
         {
-            StartTestServer();
+            var networkInterface = Substitute.For<INetworkInterface>();
+            Server.Instance.Init(new ushort[] {9099}, 100, true, false);
+            var serverDriver = new NetworkDriver(networkInterface, new NetworkDataStreamParameter {size = 64});
+            Server.Instance.Start(serverDriver);
             Assert.Throws<InvalidOperationException>(() => Server.Instance.Start());
         }
 
         [Test]
         public void ShouldStopServer()
         {
-            StartTestServer();
+            var networkInterface = Substitute.For<INetworkInterface>();
+            Server.Instance.Init(new ushort[] {9099}, 100, true, false);
+            var serverDriver = new NetworkDriver(networkInterface, new NetworkDataStreamParameter {size = 64});
+            Server.Instance.Start(serverDriver);
             Server.Instance.Stop();
             Assert.False(Server.IsActive);
         }

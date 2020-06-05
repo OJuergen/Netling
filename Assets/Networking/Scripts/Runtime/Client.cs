@@ -1,5 +1,4 @@
 using System;
-using JetBrains.Annotations;
 using Unity.Collections;
 using Unity.Networking.Transport;
 using Unity.Networking.Transport.Utilities;
@@ -36,7 +35,6 @@ namespace Networking
         private NetworkDriver _clientDriver;
         private NetworkConnection _clientToServerConnection;
         private float _timeout;
-        private GameActionManager _gameActionManager;
         private float _averageServerTimeOffset;
 
         // pendingPing is a ping sent to the server which have not yet received a response.
@@ -55,13 +53,11 @@ namespace Networking
         public static event Action<int> DataReceived;
         public static event Action<int> DataSent;
 
-        public void Init(string ip, ushort port, bool useLocalhost, float timeout, bool useSimulationPipeline,
-                         [NotNull] GameActionManager gameActionManager)
+        public void Init(string ip, ushort port, bool useLocalhost, float timeout, bool useSimulationPipeline)
         {
             SetEndpoint(ip, port, useLocalhost);
             _timeout = timeout;
             _averageServerTimeOffset = 0;
-            _gameActionManager = gameActionManager;
             if (_clientDriver.IsCreated) _clientDriver.Dispose();
             _clientDriver = new NetworkDriver(new UDPNetworkInterface(), new SimulatorUtility.Parameters
             {
@@ -267,7 +263,7 @@ namespace Networking
                             bool valid = streamReader.ReadBool();
                             try
                             {
-                                GameAction gameAction = _gameActionManager.Get(gameActionID);
+                                GameAction gameAction = GameActionManager.Instance.Get(gameActionID);
                                 GameAction.IParameters parameters = gameAction.DeserializeParameters(ref streamReader);
                                 gameAction.ReceiveOnClient(parameters, valid, actorNumber, triggerTime);
                                 break;
@@ -439,7 +435,7 @@ namespace Networking
 
             DataStreamWriter streamWriter = _clientDriver.BeginSend(_reliablePipeline, _clientToServerConnection);
             streamWriter.WriteInt(Commands.GameAction);
-            streamWriter.WriteInt(_gameActionManager.GetID(gameAction));
+            streamWriter.WriteInt(GameActionManager.Instance.GetID(gameAction));
             streamWriter.WriteInt(ActorNumber);
             streamWriter.WriteFloat(Server.Time);
             gameAction.SerializeParameters(ref streamWriter, parameters);

@@ -15,13 +15,13 @@ namespace Networking.Samples
         {
             _playerPrefab = playerPrefab;
             Server.Instance.PlayerAccepted += OnPlayerAccepted;
-            Server.Instance.PlayerDisconnected += OnPlayerDisconnected;
+            Server.Instance.ClientDisconnected += OnClientDisconnected;
         }
 
         ~PlayerManager()
         {
             Server.Instance.PlayerAccepted -= OnPlayerAccepted;
-            Server.Instance.PlayerDisconnected -= OnPlayerDisconnected;
+            Server.Instance.ClientDisconnected -= OnClientDisconnected;
         }
 
         private void OnPlayerAccepted(int actorNumber)
@@ -35,7 +35,7 @@ namespace Networking.Samples
             Server.Instance.SpawnNetObject(_playerPrefab, Vector3.zero, Quaternion.identity, actorNumber);
         }
 
-        private void OnPlayerDisconnected(int id)
+        private void OnClientDisconnected(int id)
         {
             if (!_players.ContainsKey(id))
             {
