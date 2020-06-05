@@ -69,6 +69,13 @@ namespace Netling
                 return StringComparer.InvariantCulture.Compare(x.MethodName, y.MethodName);
             }
         }
+        
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            FindPrefabs();
+        }
+#endif
 
         private void AssignIDs()
         {
