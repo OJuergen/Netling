@@ -4,6 +4,9 @@ using UnityEngine;
 
 namespace Netling
 {
+    /// <summary>
+    /// Behaviour for synchronizing position and rotation over the network.
+    /// </summary>
     public class SyncTransform : NetBehaviour
     {
         [Header("Client Side Prediction")]
@@ -121,19 +124,23 @@ namespace Netling
             Updated?.Invoke(this);
         }
 
-        public void Jump(Vector3 position)
+        /// <summary>
+        /// Directly sets the position of the object with no interpolated movement.
+        /// </summary>
+        /// <param name="position"></param>
+        public void SetPosition(Vector3 position)
         {
             if (HasAuthority || Server.IsActive)
             {
-                JumpRPC(position);
-                SendRPC(nameof(JumpRPC), position);
+                SetPositionRPC(position);
+                SendRPC(nameof(SetPositionRPC), position);
             }
         }
 
-        [MufflonRPC]
-        private void JumpRPC(Vector3 position)
+        [NetlingRPC]
+        private void SetPositionRPC(Vector3 position)
         {
-            if (Server.IsActive) SendRPC(nameof(JumpRPC), position);
+            if (Server.IsActive) SendRPC(nameof(SetPositionRPC), position);
             _predictedPosition.Clear();
             _latestPosition = position;
             _predictedPosition.ReceiveValue(Server.Time, position);
