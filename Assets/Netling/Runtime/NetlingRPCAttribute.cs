@@ -3,6 +3,6 @@ using System;
 namespace Netling
 {
     [AttributeUsage(AttributeTargets.Method)]
-    public class MufflonRPCAttribute : Attribute
+    public class NetlingRPCAttribute : Attribute
     { }
 }

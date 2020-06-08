@@ -42,7 +42,7 @@ namespace Netling
             MethodInfo[] rpcMethods =
                 GetBaseTypes(GetType())
                     .SelectMany(t => t.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
-                    .Where(info => info.GetCustomAttributes(typeof(MufflonRPCAttribute), false).Length > 0)
+                    .Where(info => info.GetCustomAttributes(typeof(NetlingRPCAttribute), false).Length > 0)
                     .ToArray();
             _rpcMethodNames = rpcMethods.Select(info => info.Name).OrderBy(n => n).ToArray();
 #if UNITY_EDITOR
@@ -75,7 +75,7 @@ namespace Netling
             MethodInfo[] unsortedRPCMethods =
                 GetBaseTypes(GetType())
                     .SelectMany(t => t.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
-                    .Where(info => info.GetCustomAttributes(typeof(MufflonRPCAttribute), false).Length > 0)
+                    .Where(info => info.GetCustomAttributes(typeof(NetlingRPCAttribute), false).Length > 0)
                     .ToArray();
             if (_rpcMethodNames == null) return;
             _rpcDelegates = new RPCDelegate[_rpcMethodNames.Length];

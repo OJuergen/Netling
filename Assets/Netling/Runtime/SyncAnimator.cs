@@ -60,7 +60,7 @@ namespace Netling
             }
         }
 
-        [MufflonRPC]
+        [NetlingRPC]
         private void ChangeCurrentStateRPC(int stateHash, float enterServerTime, byte[] paramBytes)
         {
             if (HasAuthority) return;
@@ -71,7 +71,7 @@ namespace Netling
             DeserializeParameters(paramBytes);
         }
 
-        [MufflonRPC]
+        [NetlingRPC]
         private void TransitionRPC(int stateHash, float enterServerTime, float transitionDuration, byte[] paramBytes)
         {
             if (HasAuthority) return;

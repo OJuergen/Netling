@@ -113,7 +113,7 @@ namespace Netling
                     GetBaseTypes(netBehaviour.GetType())
                         .SelectMany(t =>
                             t.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
-                        .Where(info => info.GetCustomAttributes(typeof(MufflonRPCAttribute), false).Length > 0)
+                        .Where(info => info.GetCustomAttributes(typeof(NetlingRPCAttribute), false).Length > 0)
                         .ToArray();
                 _RPCInfo.AddRange(rpcMethods.Select(info => new RPCInfo
                 {
@@ -212,7 +212,7 @@ namespace Netling
                     MethodInfo[] unsortedRPCMethodInfos = GetBaseTypes(netBehaviour.GetType())
                         .SelectMany(type =>
                             type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
-                        .Where(info => info.GetCustomAttributes(typeof(MufflonRPCAttribute), false).Length > 0)
+                        .Where(info => info.GetCustomAttributes(typeof(NetlingRPCAttribute), false).Length > 0)
                         .ToArray();
                     foreach (MethodInfo rpcMethodInfo in unsortedRPCMethodInfos)
                     {
