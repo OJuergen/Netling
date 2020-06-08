@@ -195,7 +195,7 @@ Light:
   m_BounceIntensity: 1
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
-  m_BoundingSphereOverride: {x: 8.27e-43, y: 0, z: 0, w: 0.0000000016108457}
+  m_BoundingSphereOverride: {x: 0, y: 0, z: 0, w: -11.0625}
   m_UseBoundingSphereOverride: 0
   m_ShadowRadius: 0
   m_ShadowAngle: 0
@@ -220,6 +220,11 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 217352294269792777, guid: cdcad9226d97720498a006919964004b,
+        type: 3}
+      propertyPath: _autoConnect
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1039895033380712861, guid: cdcad9226d97720498a006919964004b,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -341,7 +346,7 @@ Transform:
   m_GameObject: {fileID: 1067826462}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: -1, z: 0}
-  m_LocalScale: {x: 10, y: 2, z: 10}
+  m_LocalScale: {x: 100, y: 2, z: 100}
   m_Children: []
   m_Father: {fileID: 965147133}
   m_RootOrder: 0
@@ -671,6 +676,11 @@ PrefabInstance:
     - target: {fileID: 2247280445141982978, guid: d7c1594f4654ad84fa8e4962a21e23c0,
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5484819416930622046, guid: d7c1594f4654ad84fa8e4962a21e23c0,
+        type: 3}
+      propertyPath: _autoStart
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []

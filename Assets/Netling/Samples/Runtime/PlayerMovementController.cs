@@ -3,9 +3,10 @@ using UnityEngine;
 namespace Netling.Samples
 {
     [RequireComponent(typeof(Player))]
-    public sealed class PlayerController : MonoBehaviour
+    public sealed class PlayerMovementController : MonoBehaviour
     {
         [SerializeField] private float _speed;
+        [SerializeField] private float _rotationalSpeed;
         private Player _player;
 
         private void Awake()
@@ -25,6 +26,10 @@ namespace Netling.Samples
                 t.position -= _speed * Time.deltaTime * t.right;
             if (Input.GetKey(KeyCode.D))
                 t.position += _speed * Time.deltaTime * t.right;
+            if (Input.GetKey(KeyCode.E))
+                t.Rotate(Vector3.up, _rotationalSpeed * Time.deltaTime);
+            if (Input.GetKey(KeyCode.Q))
+                t.Rotate(Vector3.up, -_rotationalSpeed * Time.deltaTime);
         }
     }
 }

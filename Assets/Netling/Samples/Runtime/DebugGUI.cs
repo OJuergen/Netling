@@ -4,7 +4,6 @@ namespace Netling.Samples
 {
     public sealed class DebugGUI : MonoBehaviour
     {
-        [SerializeField] private GameActionManager _gameActionManager;
         private float _rtt;
         private float _latency;
 
@@ -47,18 +46,6 @@ namespace Netling.Samples
                 Client.Instance.Disconnect();
             }
             GUILayout.TextArea($"RTT: {_rtt * 1000:0.00} ms\nLAT: {_latency * 1000:0.00} ms");
-
-            if (GUILayout.Button("SampleGameAction(1)"))
-            {
-                var gameAction = _gameActionManager.Get<SampleGameAction>();
-                if (gameAction != null) gameAction.Trigger(1);
-            }
-
-            if (GUILayout.Button("SampleGameAction(2)"))
-            {
-                var gameAction = _gameActionManager.Get<SampleGameAction>();
-                if (gameAction != null) gameAction.Trigger(2);
-            }
         }
     }
 }

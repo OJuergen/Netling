@@ -67,5 +67,10 @@ namespace Netling.Samples
 
             _players.Remove(player.OwnerActorNumber);
         }
+
+        public Player Get(int actorNumber)
+        {
+            return _players.TryGetValue(actorNumber, out Player player) ? player : null;
+        }
     }
 }
