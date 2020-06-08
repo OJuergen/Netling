@@ -7,12 +7,11 @@ namespace Netling
 {
     public sealed class NetObject : MonoBehaviour
     {
-        [SerializeField, NotEditable] private int _id;
-        [SerializeField, NotEditable] private ushort _prefabIndex;
         [SerializeField, NotEditable] private NetBehaviour[] _netBehaviours;
         private int _ownerActorNumber = Server.ServerActorNumber;
         public bool IsInitialized { get; private set; }
 
+        private int _id;
         public int ID
         {
             get
@@ -24,16 +23,16 @@ namespace Netling
             private set => _id = value;
         }
 
+        private ushort _prefabIndex;
         public ushort PrefabIndex
         {
-            get => _prefabIndex;
-            set
+            get
             {
-                _prefabIndex = value;
-#if UNITY_EDITOR
-                UnityEditor.EditorUtility.SetDirty(this);
-#endif
+                if (Application.isPlaying && !IsInitialized)
+                    throw new InvalidOperationException("Cannot query prefab index of uninitialized NetObject");
+                return _prefabIndex;
             }
+            private set => _prefabIndex = value;
         }
 
         public int OwnerActorNumber

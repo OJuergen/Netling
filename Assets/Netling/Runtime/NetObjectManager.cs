@@ -6,7 +6,6 @@ using System.Reflection;
 using JetBrains.Annotations;
 using MufflonUtil;
 using Unity.Networking.Transport;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -62,33 +61,22 @@ namespace Netling
         {
             public int Compare(RPCInfo x, RPCInfo y)
             {
-                if (x.Prefab.PrefabIndex > y.Prefab.PrefabIndex) return 1;
-                if (x.Prefab.PrefabIndex < y.Prefab.PrefabIndex) return -1;
+                int prefabIndexX = Instance._netObjectPrefabs.IndexOf(x.Prefab);
+                int prefabIndexY = Instance._netObjectPrefabs.IndexOf(y.Prefab);
+                if (prefabIndexX > prefabIndexY) return 1;
+                if (prefabIndexX < prefabIndexY) return -1;
                 if (x.NetBehaviour.NetBehaviourID > y.NetBehaviour.NetBehaviourID) return 1;
                 if (x.NetBehaviour.NetBehaviourID < y.NetBehaviour.NetBehaviourID) return -1;
                 return StringComparer.InvariantCulture.Compare(x.MethodName, y.MethodName);
             }
         }
-        
+
 #if UNITY_EDITOR
         private void OnValidate()
         {
             FindPrefabs();
         }
 #endif
-
-        private void AssignIDs()
-        {
-            Debug.Log($"Assigning IDs for {_netObjectPrefabs.Count} prefabs");
-            for (ushort i = 0; i < _netObjectPrefabs.Count; i++)
-            {
-                if (_netObjectPrefabs[i] == null) continue;
-                _netObjectPrefabs[i].PrefabIndex = i;
-            }
-#if UNITY_EDITOR
-            EditorUtility.SetDirty(this);
-#endif
-        }
 
         private void CollectRPCInfo()
         {
@@ -98,7 +86,7 @@ namespace Netling
                 if (_netObjectPrefabs[i] != null) AddRPCInfo(_netObjectPrefabs[i]);
             }
 #if UNITY_EDITOR
-            EditorUtility.SetDirty(this);
+            UnityEditor.EditorUtility.SetDirty(this);
 #endif
         }
 
@@ -135,7 +123,7 @@ namespace Netling
             PrepareRPCDelegates();
 #if UNITY_EDITOR
             AssetPostProcessor.ImportedPrefab += OnImportedPrefab;
-            AssetPostProcessor.DeletedAsset += OnDeletedPrefab;
+            AssetPostProcessor.DeletedAsset += OnDeletedAsset;
 #endif
         }
 
@@ -146,7 +134,7 @@ namespace Netling
             Server.Instance.ClientDisconnected -= OnClientDisconnected;
 #if UNITY_EDITOR
             AssetPostProcessor.ImportedPrefab -= OnImportedPrefab;
-            AssetPostProcessor.DeletedAsset -= OnDeletedPrefab;
+            AssetPostProcessor.DeletedAsset -= OnDeletedAsset;
 #endif
         }
 
@@ -159,7 +147,7 @@ namespace Netling
             FindPrefabs();
         }
 
-        private void OnDeletedPrefab(string assetPath)
+        private void OnDeletedAsset(string assetPath)
         {
             FindPrefabs();
         }
@@ -167,14 +155,14 @@ namespace Netling
         [ContextMenu("Find Prefabs")]
         public void FindPrefabs()
         {
-            _netObjectPrefabs = AssetDatabase.FindAssets("t:GameObject")
-                .Select(AssetDatabase.GUIDToAssetPath)
-                .Select(AssetDatabase.LoadAssetAtPath<GameObject>)
+            _netObjectPrefabs = UnityEditor.AssetDatabase.FindAssets("t:GameObject")
+                .Select(UnityEditor.AssetDatabase.GUIDToAssetPath)
+                .Select(UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>)
+                .Where(go => go != null)
                 .Select(go => go.GetComponent<NetObject>())
                 .Where(netObject => netObject != null)
                 .OrderBy(p => p.name)
                 .ToList();
-            AssignIDs();
             CollectRPCInfo();
             Debug.Log($"FindPrefabs {_netObjectPrefabs.Count} prefabs");
         }
@@ -204,8 +192,9 @@ namespace Netling
         {
             _rpcDelegates.Clear();
             _argumentTypes.Clear();
-            foreach (NetObject prefab in _netObjectPrefabs)
+            for (ushort prefabIndex = 0; prefabIndex < _netObjectPrefabs.Count; prefabIndex++)
             {
+                var prefab = _netObjectPrefabs[prefabIndex];
                 if (prefab == null) continue;
                 foreach (NetBehaviour netBehaviour in prefab.NetBehaviours)
                 {
@@ -224,14 +213,14 @@ namespace Netling
                         };
                         var methodIndex = (ushort) _RPCInfo.IndexOf(rpcInfo);
                         (ushort PrefabIndex, ushort NetBehaviourID, ushort MethodIndex) rpcID =
-                            (prefab.PrefabIndex, netBehaviour.NetBehaviourID, methodIndex);
+                            (prefabIndex, netBehaviour.NetBehaviourID, methodIndex);
                         ParameterInfo[] parameterInfos = rpcMethodInfo.GetParameters();
                         _rpcDelegates[rpcID] = GetRPCDelegate(rpcMethodInfo);
                         _argumentTypes[rpcID] = parameterInfos
                             .Select(p => p.ParameterType)
                             .Where(type => type != typeof(MessageInfo))
                             .ToArray();
-                        _rpcNameToID[(prefab.PrefabIndex, netBehaviour.NetBehaviourID, rpcMethodInfo.Name)] = rpcID;
+                        _rpcNameToID[(prefabIndex, netBehaviour.NetBehaviourID, rpcMethodInfo.Name)] = rpcID;
                     }
                 }
             }
@@ -294,16 +283,14 @@ namespace Netling
                                        int ownerActorNumber = Server.ServerActorNumber)
         {
             Server.AssertActive();
-            var prefabIndex = (ushort) _netObjectPrefabs.IndexOf(netObjectPrefab);
-            if (netObjectPrefab.PrefabIndex >= _netObjectPrefabs.Count
-                || _netObjectPrefabs[netObjectPrefab.PrefabIndex] != netObjectPrefab)
+            if (!_netObjectPrefabs.Contains(netObjectPrefab))
             {
                 throw new Exception($"Failed to instantiate {netObjectPrefab}: Prefab not registered");
             }
 
+            var prefabIndex = (ushort) _netObjectPrefabs.IndexOf(netObjectPrefab);
             int id = _nextId++;
-            NetObject netObject =
-                netObjectPrefab.Create(id, prefabIndex, ownerActorNumber, position, rotation);
+            NetObject netObject = netObjectPrefab.Create(id, prefabIndex, ownerActorNumber, position, rotation);
             if (!string.IsNullOrEmpty(_sceneName))
             {
                 Scene scene = SceneManager.GetSceneByName(_sceneName);
@@ -329,9 +316,8 @@ namespace Netling
                     _netObjectPrefabs[prefabIndex].Create(id, prefabIndex, ownerActorNumber, position, rotation);
                 _objectsById.Add(id, netObject);
                 _objectCount = _objectsById.Count;
-                if (!string.IsNullOrEmpty(_sceneName))
-                    SceneManager.MoveGameObjectToScene(netObject.gameObject,
-                        SceneManager.GetSceneByName(_sceneName));
+                if (!string.IsNullOrEmpty(_sceneName) && SceneManager.GetSceneByName(_sceneName).isLoaded)
+                    SceneManager.MoveGameObjectToScene(netObject.gameObject, SceneManager.GetSceneByName(_sceneName));
                 NetObjectAdded?.Invoke(netObject);
             }
 

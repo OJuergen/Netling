@@ -9,24 +9,15 @@ using UnityEngine;
 
 namespace Netling
 {
+    /// <summary>
+    /// A <see cref="ScriptableObject"/> that has network capabilities.
+    /// Supports synchronized variables and remote procedure calls.
+    /// </summary>
     public abstract class NetAsset : ManagedAsset, IDirtyMaskProvider
     {
         [SerializeField, NotEditable] private string[] _rpcMethodNames;
 
-        [SerializeField, NotEditable, Tooltip("ID for identifying this asset over the network")]
-        private int _netID;
-
-        public int NetID
-        {
-            get => _netID;
-            set
-            {
-                _netID = value;
-#if UNITY_EDITOR
-                UnityEditor.EditorUtility.SetDirty(this);
-#endif
-            }
-        }
+        public int NetID => NetAssetManager.Instance.GetID(this);
 
         private delegate void RPCDelegate(MessageInfo messageInfo, params object[] args);
 

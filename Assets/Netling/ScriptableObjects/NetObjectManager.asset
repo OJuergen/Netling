@@ -15,10 +15,21 @@ MonoBehaviour:
   _sceneName: Core
   _objectCount: 0
   _netObjectPrefabs:
+  - {fileID: 6894782797894969313, guid: 712011e18a79cd14ab2e99511677c27e, type: 3}
   - {fileID: -7742676964044612033, guid: 3608ca3daecbf40438df66a0b1ce22af, type: 3}
   _RPCInfo:
+  - Prefab: {fileID: 6894782797894969313, guid: 712011e18a79cd14ab2e99511677c27e,
+      type: 3}
+    NetBehaviour: {fileID: 8622028493794728541, guid: 712011e18a79cd14ab2e99511677c27e,
+      type: 3}
+    MethodName: SetPositionRPC
   - Prefab: {fileID: -7742676964044612033, guid: 3608ca3daecbf40438df66a0b1ce22af,
       type: 3}
     NetBehaviour: {fileID: -4884554391204536584, guid: 3608ca3daecbf40438df66a0b1ce22af,
       type: 3}
-    MethodName: JumpRPC
+    MethodName: SetPositionRPC
+  - Prefab: {fileID: -7742676964044612033, guid: 3608ca3daecbf40438df66a0b1ce22af,
+      type: 3}
+    NetBehaviour: {fileID: 8888730589067183516, guid: 3608ca3daecbf40438df66a0b1ce22af,
+      type: 3}
+    MethodName: Reload
