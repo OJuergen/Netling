@@ -74,7 +74,7 @@ namespace Netling
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            FindPrefabs();
+            UnityEditor.EditorApplication.delayCall += FindPrefabs; // delay call to avoid warning about SendMessage
         }
 #endif
 
