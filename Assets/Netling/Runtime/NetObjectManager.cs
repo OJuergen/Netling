@@ -145,11 +145,14 @@ namespace Netling
             if (netObject == null || _netObjectPrefabs.Contains(netObject)) return;
             _netObjectPrefabs.Add(netObject);
             FindPrefabs();
+            UnityEditor.EditorUtility.SetDirty(this);
         }
 
         private void OnDeletedAsset(string assetPath)
         {
+            int prefabCount = NetObjects.Length;
             FindPrefabs();
+            if(NetObjects.Length != prefabCount) UnityEditor.EditorUtility.SetDirty(this);
         }
 
         [ContextMenu("Find Prefabs")]
