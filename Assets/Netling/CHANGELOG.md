@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.4.0] - 2019-06-09
+### Removed
+- Samples are now outside the package
+### Fixed
+- Dirty management of NetObjectManager missed new/deleted assets
+
 ## [0.3.1] - 2019-06-09
 ### Changed
 - optimized dirty management of NetObjectManager
