@@ -86,7 +86,7 @@ namespace Netling
                 if (_netObjectPrefabs[i] != null) AddRPCInfo(_netObjectPrefabs[i]);
             }
 #if UNITY_EDITOR
-            UnityEditor.EditorUtility.SetDirty(this);
+            if (this != null) UnityEditor.EditorUtility.SetDirty(this);
 #endif
         }
 

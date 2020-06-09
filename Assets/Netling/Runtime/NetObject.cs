@@ -77,12 +77,15 @@ namespace Netling
         public void AssignIDs()
         {
             _netBehaviours = GetComponentsInChildren<NetBehaviour>();
+            var dirty = false;
             for (ushort i = 0; i < _netBehaviours.Length; i++)
             {
+                if (_netBehaviours[i].NetBehaviourID == i) continue;
                 _netBehaviours[i].NetBehaviourID = i;
+                dirty = true;
             }
 #if UNITY_EDITOR
-            UnityEditor.EditorUtility.SetDirty(this);
+            if (dirty) UnityEditor.EditorUtility.SetDirty(this);
 #endif
         }
 
