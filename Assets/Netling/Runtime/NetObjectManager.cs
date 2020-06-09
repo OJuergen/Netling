@@ -11,7 +11,7 @@ using UnityEngine.SceneManagement;
 
 namespace Netling
 {
-    [CreateAssetMenu(menuName = "Network Object Manager")]
+    [CreateAssetMenu(menuName = "Netling/Network Object Manager")]
     public sealed class NetObjectManager : ScriptableObjectSingleton<NetObjectManager>
     {
         [SerializeField, Tooltip("If provided, all network objects are moved to this scene.")]
