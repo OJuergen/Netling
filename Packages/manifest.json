@@ -3,11 +3,10 @@
     "com.mufflonzucht.mufflonutil": "https://github.com/OJuergen/MufflonUtil.git?path=Assets/MufflonUtil",
     "com.unity.collab-proxy": "1.2.16",
     "com.unity.ide.rider": "1.1.4",
-    "com.unity.ide.vscode": "1.2.0",
     "com.unity.test-framework": "1.1.14",
     "com.unity.testtools.codecoverage": "0.3.0-preview",
     "com.unity.textmeshpro": "2.0.1",
-    "com.unity.timeline": "1.2.14",
+    "com.unity.timeline": "1.2.15",
     "com.unity.transport": "0.3.1-preview.4",
     "com.unity.ugui": "1.0.0",
     "com.unity.modules.ai": "1.0.0",
@@ -45,7 +44,7 @@
   "lock": {
     "com.mufflonzucht.mufflonutil": {
       "revision": "HEAD",
-      "hash": "cb9a363a4646d32e943af4252cab4763d8099a55"
+      "hash": "09572a1245565fe72a6960567f93921840c7fd03"
     }
   }
 }
