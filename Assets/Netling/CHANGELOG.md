@@ -6,18 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-## [0.4.0] - 2019-06-09
+## [0.4.0] - 2020-06-09
 ### Removed
 - Samples are now outside the package
 ### Fixed
 - Dirty management of NetObjectManager missed new/deleted assets
 
-## [0.3.1] - 2019-06-09
+## [0.3.1] - 2020-06-09
 ### Changed
 - optimized dirty management of NetObjectManager
 - delay OnValidate call to avoid warning logs 
 
-## [0.3.0] - 2019-06-08
+## [0.3.0] - 2020-06-08
 ### Added
 - A Sample that demonstrates networked objects, assets and remote procedure calls
 ### Changed
@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   not on the assets (NetObject and NetAsset). This resolves serialization issues
 - Renamed SyncTransform Jump to SetPosition
 
-## [0.2.0] - 2019-06-05
+## [0.2.0] - 2020-06-05
 ### Added
 - Automatic asset search on validation
 ### Changed
@@ -34,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed SO singleton asset loading in tests
 
-## [0.1.0] - 2019-06-05
+## [0.1.0] - 2020-06-05
 ### Added
 - First draft version of Netling library
 

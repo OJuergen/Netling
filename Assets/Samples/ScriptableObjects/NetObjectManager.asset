@@ -16,6 +16,7 @@ MonoBehaviour:
   _objectCount: 0
   _netObjectPrefabs:
   - {fileID: 6894782797894969313, guid: 712011e18a79cd14ab2e99511677c27e, type: 3}
+  - {fileID: 5928809908459067537, guid: 5c8a2dbfd88abe541b4ae2b0e242eabd, type: 3}
   - {fileID: -7742676964044612033, guid: 3608ca3daecbf40438df66a0b1ce22af, type: 3}
   _RPCInfo:
   - Prefab: {fileID: 6894782797894969313, guid: 712011e18a79cd14ab2e99511677c27e,
