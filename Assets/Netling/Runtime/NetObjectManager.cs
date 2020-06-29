@@ -152,7 +152,7 @@ namespace Netling
         {
             int prefabCount = NetObjects.Length;
             FindPrefabs();
-            if(NetObjects.Length != prefabCount) UnityEditor.EditorUtility.SetDirty(this);
+            if (NetObjects.Length != prefabCount) UnityEditor.EditorUtility.SetDirty(this);
         }
 
         [ContextMenu("Find Prefabs")]
@@ -160,6 +160,7 @@ namespace Netling
         {
             _netObjectPrefabs = UnityEditor.AssetDatabase.FindAssets("t:GameObject")
                 .Select(UnityEditor.AssetDatabase.GUIDToAssetPath)
+                .Where(path => path.StartsWith("Assets/")) // exclude package assets
                 .Select(UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>)
                 .Where(go => go != null)
                 .Select(go => go.GetComponent<NetObject>())
