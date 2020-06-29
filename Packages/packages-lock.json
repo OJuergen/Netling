@@ -7,7 +7,7 @@
       "dependencies": {
         "com.unity.timeline": "1.2.15"
       },
-      "hash": "09572a1245565fe72a6960567f93921840c7fd03"
+      "hash": "e9bf815b81b0956f5ad8400744618db5dfe60d1d"
     },
     "com.unity.burst": {
       "version": "1.3.0",
