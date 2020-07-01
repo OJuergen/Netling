@@ -12,7 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 039174a175924dd499d27741ddbd5506, type: 3}
   m_Name: NetObjectManager
   m_EditorClassIdentifier: 
-  _sceneName: Core
   _objectCount: 0
   _netObjectPrefabs:
   - {fileID: 6894782797894969313, guid: 712011e18a79cd14ab2e99511677c27e, type: 3}

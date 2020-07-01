@@ -14,9 +14,6 @@ namespace Netling
     [CreateAssetMenu(menuName = "Netling/Network Object Manager")]
     public sealed class NetObjectManager : ScriptableObjectSingleton<NetObjectManager>
     {
-        [SerializeField, Tooltip("If provided, all network objects are moved to this scene.")]
-        private string _sceneName;
-
         [SerializeField, NotEditable, UsedImplicitly]
         private int _objectCount;
 
@@ -276,15 +273,16 @@ namespace Netling
         }
 
         public T SpawnOnServer<T>(T networkBehaviourPrefab, Vector3 position, Quaternion rotation,
+                                  string sceneName = null,
                                   int ownerActorNumber = Server.ServerActorNumber) where T : NetBehaviour
         {
             Server.AssertActive();
             NetObject netObjectPrefab = networkBehaviourPrefab.NetObject;
-            return SpawnOnServer(netObjectPrefab, position, rotation, ownerActorNumber).GetComponent<T>();
+            return SpawnOnServer(netObjectPrefab, position, rotation, sceneName, ownerActorNumber).GetComponent<T>();
         }
 
         public NetObject SpawnOnServer(NetObject netObjectPrefab, Vector3 position, Quaternion rotation,
-                                       int ownerActorNumber = Server.ServerActorNumber)
+                                       string sceneName = null, int ownerActorNumber = Server.ServerActorNumber)
         {
             Server.AssertActive();
             if (!_netObjectPrefabs.Contains(netObjectPrefab))
@@ -295,9 +293,9 @@ namespace Netling
             var prefabIndex = (ushort) _netObjectPrefabs.IndexOf(netObjectPrefab);
             int id = _nextId++;
             NetObject netObject = netObjectPrefab.Create(id, prefabIndex, ownerActorNumber, position, rotation);
-            if (!string.IsNullOrEmpty(_sceneName))
+            if (!string.IsNullOrEmpty(sceneName))
             {
-                Scene scene = SceneManager.GetSceneByName(_sceneName);
+                Scene scene = SceneManager.GetSceneByName(sceneName);
                 if (scene.isLoaded) SceneManager.MoveGameObjectToScene(netObject.gameObject, scene);
             }
 
@@ -309,19 +307,19 @@ namespace Netling
         }
 
         public NetObject SpawnOnClient(int id, ushort prefabIndex, int ownerActorNumber, Vector3 position,
-                                       Quaternion rotation)
+                                       Quaternion rotation, Scene scene)
         {
             if (_netObjectPrefabs.Count < prefabIndex + 1)
                 throw new Exception($"Cannot instantiate network object with prefab index {prefabIndex}");
 
             if (!_objectsById.ContainsKey(id))
             {
+                if (!scene.isLoaded) throw new ArgumentException($"Scene {scene} not loaded");
                 NetObject netObject =
                     _netObjectPrefabs[prefabIndex].Create(id, prefabIndex, ownerActorNumber, position, rotation);
                 _objectsById.Add(id, netObject);
                 _objectCount = _objectsById.Count;
-                if (!string.IsNullOrEmpty(_sceneName) && SceneManager.GetSceneByName(_sceneName).isLoaded)
-                    SceneManager.MoveGameObjectToScene(netObject.gameObject, SceneManager.GetSceneByName(_sceneName));
+                SceneManager.MoveGameObjectToScene(netObject.gameObject, scene);
                 NetObjectAdded?.Invoke(netObject);
             }
 

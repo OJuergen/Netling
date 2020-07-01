@@ -233,6 +233,13 @@ namespace Netling
                         writer.WriteFloat(UnityEngine.Time.deltaTime);
                         _serverDriver.EndSend(writer);
                         break;
+                    case Commands.RequestSpawnMessage:
+                    {
+                        var connections = new NativeList<NetworkConnection>(1, Allocator.Temp) {connection};
+                        SendSpawnMessage(NetObjectManager.Instance.NetObjects, connections);
+                        connections.Dispose();
+                        break;
+                    }
                     case Commands.UpdateNetObjects:
                     {
                         int objectsInMessage = streamReader.ReadInt();
@@ -343,7 +350,9 @@ namespace Netling
                 if (connection.InternalId != actorNumber) continue;
                 Debug.Log($"Accepting player of client {actorNumber}");
                 var connections = new NativeList<NetworkConnection>(1, Allocator.Temp) {connection};
-                SendSpawnMessage(NetObjectManager.Instance.NetObjects, connections);
+                DataStreamWriter writer = _serverDriver.BeginSend(_reliablePipeline, connection);
+                writer.WriteInt(Commands.AcceptPlayer);
+                _serverDriver.EndSend(writer);
                 SendNetAssetUpdate(true, connections);
                 connections.Dispose();
                 PlayerAccepted?.Invoke(actorNumber);
@@ -426,6 +435,7 @@ namespace Netling
                         objectWriter.WriteInt(netObject.OwnerActorNumber);
                         objectWriter.WriteVector3(netObject.transform.position);
                         objectWriter.WriteQuaternion(netObject.transform.rotation);
+                        objectWriter.WriteInt(netObject.gameObject.scene.buildIndex);
                         DataStreamWriter objectSizeWriter = objectWriter;
                         objectWriter.WriteInt(0);
                         int length = objectWriter.Length;
@@ -447,23 +457,23 @@ namespace Netling
                 }
             }
         }
-        
+
         public T SpawnNetObject<T>(T netBehaviourPrefab, Vector3 position, Quaternion rotation,
-                                   int actorNumber = ServerActorNumber)
+                                   string sceneName = null, int actorNumber = ServerActorNumber)
             where T : NetBehaviour
         {
-            return SpawnNetObject(netBehaviourPrefab.NetObject, position, rotation, actorNumber)
+            return SpawnNetObject(netBehaviourPrefab.NetObject, position, rotation, sceneName, actorNumber)
                 .GetComponent<T>();
         }
 
         public NetObject SpawnNetObject(NetObject netObjectPrefab, Vector3 position, Quaternion rotation,
-                                        int actorNumber = ServerActorNumber)
+                                        string sceneName = null, int actorNumber = ServerActorNumber)
         {
             if (State != ServerState.Started && State != ServerState.Debug)
                 throw new InvalidOperationException("Cannot spawn NetObject: Server not running");
 
             NetObject netObject =
-                NetObjectManager.Instance.SpawnOnServer(netObjectPrefab, position, rotation, actorNumber);
+                NetObjectManager.Instance.SpawnOnServer(netObjectPrefab, position, rotation, sceneName, actorNumber);
             if (State == ServerState.Started) SendSpawnMessage(new[] {netObject}, _connections);
             return netObject;
         }

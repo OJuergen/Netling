@@ -32,7 +32,7 @@ namespace Netling.Samples
                 return;
             }
 
-            Server.Instance.SpawnNetObject(_playerPrefab, Vector3.zero, Quaternion.identity, actorNumber);
+            Server.Instance.SpawnNetObject(_playerPrefab, Vector3.zero, Quaternion.identity, null, actorNumber);
         }
 
         private void OnClientDisconnected(int id)

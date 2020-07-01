@@ -1,6 +1,7 @@
 using System;
 using MufflonUtil;
 using Unity.Networking.Transport;
+using UnityEditor;
 using UnityEngine;
 
 namespace Netling
@@ -67,6 +68,7 @@ namespace Netling
         private void OnDestroy()
         {
             if (Server.IsActive && IsInitialized) Server.Instance.UnspawnNetObject(this);
+            if(Client.IsConnected && IsInitialized) NetObjectManager.Instance.Unspawn(ID);
         }
 
         public void SetDirty()
@@ -82,7 +84,7 @@ namespace Netling
                 if (_netBehaviours[i].NetBehaviourID == i) continue;
                 _netBehaviours[i].NetBehaviourID = i;
 #if UNITY_EDITOR
-                UnityEditor.EditorUtility.SetDirty(this);
+                EditorUtility.SetDirty(this);
 #endif
             }
         }
@@ -94,8 +96,7 @@ namespace Netling
             return _netBehaviours[netBehaviourID];
         }
 
-        public NetObject Create(int id, ushort prefabIndex, int ownerActorNumber, Vector3 position,
-                                Quaternion rotation)
+        public NetObject Create(int id, ushort prefabIndex, int ownerActorNumber, Vector3 position, Quaternion rotation)
         {
             NetObject netObject = Instantiate(this, position, rotation);
             netObject.Init(id, prefabIndex, ownerActorNumber);

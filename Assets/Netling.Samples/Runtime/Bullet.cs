@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 namespace Netling.Samples
 {
@@ -8,7 +9,7 @@ namespace Netling.Samples
         [SerializeField] private float _lifetime;
         private Transform _transform;
 
-        private void Start()
+        private void Awake()
         {
             if (Server.IsActive) Destroy(gameObject, _lifetime);
             _transform = transform;

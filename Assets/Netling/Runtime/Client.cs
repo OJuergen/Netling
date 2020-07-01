@@ -3,6 +3,7 @@ using Unity.Collections;
 using Unity.Networking.Transport;
 using Unity.Networking.Transport.Utilities;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace Netling
 {
@@ -136,6 +137,7 @@ namespace Netling
                     switch (command)
                     {
                         case Commands.AssignActorNumber:
+                        {
                             ActorNumber = streamReader.ReadInt();
                             Debug.Log($"Got assigned actor number {ActorNumber}");
                             DataStreamWriter writer =
@@ -144,6 +146,19 @@ namespace Netling
                             _clientDriver.EndSend(writer);
                             DataSent?.Invoke(writer.Length);
                             break;
+                        }
+                        case Commands.AcceptPlayer:
+                        {
+                            DataStreamWriter writer =
+                                _clientDriver.BeginSend(_reliablePipeline, _clientToServerConnection);
+                            writer.WriteInt(Commands.RequestSpawnMessage);
+                            writer.WriteInt(SceneManager.sceneCount);
+                            for (var i = 0; i < SceneManager.sceneCount; i++)
+                                writer.WriteInt(SceneManager.GetSceneAt(i).buildIndex);
+                            SceneManager.sceneLoaded += OnSceneLoaded;
+                            _clientDriver.EndSend(writer);
+                            break;
+                        }
                         case Commands.Ping:
                         {
                             LastPongTime = Time.time;
@@ -174,13 +189,23 @@ namespace Netling
                                 int ownerActorNumber = streamReader.ReadInt();
                                 Vector3 position = streamReader.ReadVector3();
                                 Quaternion rotation = streamReader.ReadQuaternion();
+                                int sceneBuildIndex = streamReader.ReadInt();
                                 int size = streamReader.ReadInt();
                                 int bytesRead = streamReader.GetBytesRead();
-                                NetObject netObject = NetObjectManager.Instance.SpawnOnClient(netObjID, prefabIndex,
-                                    ownerActorNumber, position, rotation);
-                                if (netObject != null)
-                                    netObject.Deserialize(ref streamReader, behaviour => true);
-                                else
+                                Scene scene = SceneManager.GetSceneByBuildIndex(sceneBuildIndex);
+                                var deserialized = false;
+                                if (scene != null && scene.isLoaded)
+                                {
+                                    NetObject netObject = NetObjectManager.Instance.SpawnOnClient(netObjID, prefabIndex,
+                                        ownerActorNumber, position, rotation, scene);
+                                    if (netObject != null)
+                                    {
+                                        netObject.Deserialize(ref streamReader, behaviour => true);
+                                        deserialized = true;
+                                    }
+                                }
+
+                                if (!deserialized)
                                     streamReader.DiscardBytes(size);
                                 if (streamReader.GetBytesRead() - bytesRead != size)
                                     Debug.LogWarning("Did not deserialize properly!");
@@ -315,11 +340,21 @@ namespace Netling
                 else if (eventType == NetworkEvent.Type.Disconnect)
                 {
                     Debug.Log("Disconnected!");
+                    SceneManager.sceneLoaded -= OnSceneLoaded;
                     Disconnected?.Invoke();
                     State = ClientState.Disconnected;
                     _clientToServerConnection = default;
                 }
             }
+        }
+
+        private void OnSceneLoaded(Scene scene, LoadSceneMode loadSceneMode)
+        {
+            DataStreamWriter writer = _clientDriver.BeginSend(_reliablePipeline, _clientToServerConnection);
+            writer.WriteInt(Commands.RequestSpawnMessage);
+            writer.WriteInt(1);
+            writer.WriteInt(scene.buildIndex);
+            _clientDriver.EndSend(writer);
         }
 
         public void SendPlayerData(string playerData)
@@ -485,6 +520,7 @@ namespace Netling
             if (_clientDriver.IsCreated)
             {
                 _clientDriver.Disconnect(_clientToServerConnection);
+                SceneManager.sceneLoaded -= OnSceneLoaded;
                 Disconnected?.Invoke();
             }
 

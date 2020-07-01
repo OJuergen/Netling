@@ -38,7 +38,7 @@ namespace Netling.Samples
             if (Server.IsActive && SceneManager.GetSceneByName(_subSceneName).isLoaded &&
                 GUILayout.Button("Spawn NetObject"))
             {
-                Server.Instance.SpawnNetObject(_netObjectPrefab, Vector3.zero, Quaternion.identity);
+                Server.Instance.SpawnNetObject(_netObjectPrefab, Vector3.zero, Quaternion.identity, _subSceneName);
             }
 
             GUILayout.EndArea();
