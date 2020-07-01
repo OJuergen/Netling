@@ -447,7 +447,7 @@ namespace Netling
                 }
             }
         }
-
+        
         public T SpawnNetObject<T>(T netBehaviourPrefab, Vector3 position, Quaternion rotation,
                                    int actorNumber = ServerActorNumber)
             where T : NetBehaviour

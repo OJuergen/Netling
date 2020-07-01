@@ -1,7 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
-namespace Netling.Samples
+namespace Netling
 {
     public class ClientIMGUI : MonoBehaviour
     {

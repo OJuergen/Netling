@@ -1,5 +1,4 @@
-﻿using System;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace Netling.Samples
 {
@@ -7,25 +6,27 @@ namespace Netling.Samples
     {
         [SerializeField] private float _speed;
         [SerializeField] private float _lifetime;
+        private Transform _transform;
 
         private void Start()
         {
             if (Server.IsActive) Destroy(gameObject, _lifetime);
+            _transform = transform;
         }
 
         private void Update()
         {
             if (Server.IsActive)
             {
-                transform.position += transform.forward * (_speed * Time.deltaTime);
+                _transform.position += _transform.forward * (_speed * Time.deltaTime);
             }
         }
 
         public void InitOnServer(Vector3 muzzlePosition, Quaternion muzzleOrientation, float shotServerTime)
         {
             Server.AssertActive();
-            transform.position = muzzlePosition +
-                                 _speed * (Server.Time - shotServerTime) * (muzzleOrientation * transform.forward);
+            _transform.position = muzzlePosition +
+                                  _speed * (Server.Time - shotServerTime) * (muzzleOrientation * _transform.forward);
         }
     }
 }

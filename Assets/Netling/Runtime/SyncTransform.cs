@@ -12,7 +12,7 @@ namespace Netling
         [Header("Client Side Prediction")]
         [SerializeField] private Mode _mode = Mode.PredictedLerp;
 
-        [SerializeField] private float _lerpFactor = 1;
+        [SerializeField] private float _lerpFactor = 10;
         [SerializeField] private float _jumpThreshold = 1;
 
         private Vector3 _latestPosition;
