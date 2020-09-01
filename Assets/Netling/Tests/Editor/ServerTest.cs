@@ -20,6 +20,7 @@ namespace Netling.Tests
             }
             if (Server.IsActive) Server.Instance.Stop();
             Server.Instance.Dispose();
+            Client.Instance.Dispose();
         }
 
         [Test]
