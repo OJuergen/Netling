@@ -68,7 +68,7 @@ namespace Netling
         public void Start()
         {
 //            _serverDriver = new UdpNetworkDriver(new ReliableUtility.Parameters {WindowSize = 32});
-            var serverDriver = new NetworkDriver(new UDPNetworkInterface(), new SimulatorUtility.Parameters
+            var serverDriver = new NetworkDriver(new BaselibNetworkInterface(), new SimulatorUtility.Parameters
             {
                 MaxPacketCount = 30,
                 PacketDropPercentage = 5,

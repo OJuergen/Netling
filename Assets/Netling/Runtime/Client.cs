@@ -60,7 +60,7 @@ namespace Netling
             _timeout = timeout;
             _averageServerTimeOffset = 0;
             if (_clientDriver.IsCreated) _clientDriver.Dispose();
-            _clientDriver = new NetworkDriver(new UDPNetworkInterface(), new SimulatorUtility.Parameters
+            _clientDriver = new NetworkDriver(new BaselibNetworkInterface(), new SimulatorUtility.Parameters
             {
                 MaxPacketCount = 30,
                 PacketDropPercentage = 5,
