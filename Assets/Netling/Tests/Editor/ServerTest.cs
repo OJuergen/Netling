@@ -28,7 +28,7 @@ namespace Netling.Tests
         {
             var networkInterface = Substitute.For<INetworkInterface>();
             Server.Instance.Init(new ushort[] {9099}, 100, true, false);
-            var serverDriver = new NetworkDriver(networkInterface, new NetworkDataStreamParameter {size = 64});
+            var serverDriver = NetworkDriver.Create(networkInterface);
             Server.Instance.Start(serverDriver);
             Assert.True(Server.IsActive);
             Assert.True(serverDriver.Listening);
@@ -38,17 +38,17 @@ namespace Netling.Tests
         public void ShouldAcceptConnection()
         {
             Server.Instance.Init(new ushort[] {9099}, 100, true, false);
-            var serverDriver = new NetworkDriver(new IPCNetworkInterface(), new NetworkDataStreamParameter {size = 64});
+            var serverDriver = NetworkDriver.Create(new IPCNetworkInterface());
             Server.Instance.Start(serverDriver);
 
             // send out connection request
-            var clientDriver = new NetworkDriver(new IPCNetworkInterface(), new NetworkDataStreamParameter {size = 64});
+            var clientDriver = NetworkDriver.Create(new IPCNetworkInterface());
             NetworkConnection networkConnection = clientDriver.Connect(serverDriver.LocalEndPoint());
             Assert.True(networkConnection != default);
             clientDriver.ScheduleUpdate().Complete();
 
             var numberOfConnectedClients = 0;
-            var onClientConnected = new Server.ConnectionDelegate(id => numberOfConnectedClients++);
+            var onClientConnected = new Server.ConnectionDelegate(_ => numberOfConnectedClients++);
             Server.Instance.ClientConnected += onClientConnected;
             Server.Instance.Tick();
             Assert.AreEqual(1, numberOfConnectedClients);
@@ -81,7 +81,7 @@ namespace Netling.Tests
             var networkInterface = Substitute.For<INetworkInterface>();
             networkInterface.Bind(Arg.Any<NetworkInterfaceEndPoint>()).Returns(-1);
             Server.Instance.Init(new ushort[] {9099}, 100, true, false);
-            var serverDriver = new NetworkDriver(networkInterface, new NetworkDataStreamParameter {size = 64});
+            var serverDriver = NetworkDriver.Create(networkInterface);
             Assert.Throws<NetException>(() => Server.Instance.Start(serverDriver));
         }
 
@@ -90,7 +90,7 @@ namespace Netling.Tests
         {
             var networkInterface = Substitute.For<INetworkInterface>();
             Server.Instance.Init(new ushort[] {9099}, 100, true, false);
-            var serverDriver = new NetworkDriver(networkInterface, new NetworkDataStreamParameter {size = 64});
+            var serverDriver = NetworkDriver.Create(networkInterface);
             Server.Instance.Start(serverDriver);
             Assert.Throws<InvalidOperationException>(() => Server.Instance.Start());
         }
@@ -100,7 +100,7 @@ namespace Netling.Tests
         {
             var networkInterface = Substitute.For<INetworkInterface>();
             Server.Instance.Init(new ushort[] {9099}, 100, true, false);
-            var serverDriver = new NetworkDriver(networkInterface, new NetworkDataStreamParameter {size = 64});
+            var serverDriver = NetworkDriver.Create(networkInterface);
             Server.Instance.Start(serverDriver);
             Server.Instance.Stop();
             Assert.False(Server.IsActive);
