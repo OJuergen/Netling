@@ -13,7 +13,7 @@ namespace Netling
     /// A <see cref="ScriptableObject"/> that has network capabilities.
     /// Supports synchronized variables and remote procedure calls.
     /// </summary>
-    public abstract class NetAsset : ManagedAsset, IDirtyMaskProvider
+    public abstract class NetAsset : ScriptableObject, IDirtyMaskProvider, IManagedAsset
     {
         [SerializeField, NotEditable] private string[] _rpcMethodNames;
 

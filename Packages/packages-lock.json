@@ -5,9 +5,9 @@
       "depth": 0,
       "source": "git",
       "dependencies": {
-        "com.unity.timeline": "1.2.15"
+        "com.unity.timeline": "1.6.5"
       },
-      "hash": "e9bf815b81b0956f5ad8400744618db5dfe60d1d"
+      "hash": "b978784c9a271faa44852ad01732aedb2e87fcf5"
     },
     "com.unity.ai.navigation": {
       "version": "1.1.5",
@@ -106,7 +106,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.textmeshpro": {
-      "version": "3.0.6",
+      "version": "3.0.9",
       "depth": 0,
       "source": "registry",
       "dependencies": {
