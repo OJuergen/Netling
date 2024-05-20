@@ -1,5 +1,5 @@
 ﻿using System;
-using Unity.Networking.Transport;
+using Unity.Collections;
 using UnityEngine;
 
 namespace Netling
@@ -17,8 +17,8 @@ namespace Netling
 
         private Vector3 _latestPosition;
         private Quaternion _latestRotation;
-        private readonly PredictedVector3 _predictedPosition = new PredictedVector3();
-        private readonly PredictedQuaternion _predictedRotation = new PredictedQuaternion();
+        private readonly PredictedVector3 _predictedPosition = new();
+        private readonly PredictedQuaternion _predictedRotation = new();
         private float _lastUpdateTime;
 
         /// <summary>

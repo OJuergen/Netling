@@ -20,7 +20,7 @@ namespace Netling
 
         private void Awake()
         {
-            if (_maxPort < _minPort || _minPort < 1024 || _maxPort > 65535)
+            if (_maxPort < _minPort || _minPort < 1024)
                 throw new InvalidOperationException("Illegal port range. Must be between 1024 and 65535");
             ushort[] ports = Enumerable.Range(_minPort, _maxPort - _minPort + 1)
                 .Select(port => (ushort) port)

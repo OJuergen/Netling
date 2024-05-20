@@ -26,7 +26,7 @@ namespace Netling.Tests
         [Test]
         public void ShouldStartServer()
         {
-            var networkInterface = Substitute.For<INetworkInterface>();
+            var networkInterface = new MockNetworkInterface();
             Server.Instance.Init(new ushort[] {9099}, 100, true, false);
             var serverDriver = NetworkDriver.Create(networkInterface);
             Server.Instance.Start(serverDriver);
@@ -43,7 +43,7 @@ namespace Netling.Tests
 
             // send out connection request
             var clientDriver = NetworkDriver.Create(new IPCNetworkInterface());
-            NetworkConnection networkConnection = clientDriver.Connect(serverDriver.LocalEndPoint());
+            NetworkConnection networkConnection = clientDriver.Connect(serverDriver.GetLocalEndpoint());
             Assert.True(networkConnection != default);
             clientDriver.ScheduleUpdate().Complete();
 
@@ -78,8 +78,8 @@ namespace Netling.Tests
         [Test]
         public void ShouldFailToBindToPort()
         {
-            var networkInterface = Substitute.For<INetworkInterface>();
-            networkInterface.Bind(Arg.Any<NetworkInterfaceEndPoint>()).Returns(-1);
+            var networkInterface = new MockNetworkInterface();
+            networkInterface.ReturnOnBind = -1;
             Server.Instance.Init(new ushort[] {9099}, 100, true, false);
             var serverDriver = NetworkDriver.Create(networkInterface);
             Assert.Throws<NetException>(() => Server.Instance.Start(serverDriver));
@@ -88,7 +88,7 @@ namespace Netling.Tests
         [Test]
         public void ShouldNotStartServerTwice()
         {
-            var networkInterface = Substitute.For<INetworkInterface>();
+            var networkInterface = new MockNetworkInterface();
             Server.Instance.Init(new ushort[] {9099}, 100, true, false);
             var serverDriver = NetworkDriver.Create(networkInterface);
             Server.Instance.Start(serverDriver);
@@ -98,7 +98,7 @@ namespace Netling.Tests
         [Test]
         public void ShouldStopServer()
         {
-            var networkInterface = Substitute.For<INetworkInterface>();
+            var networkInterface = new MockNetworkInterface();
             Server.Instance.Init(new ushort[] {9099}, 100, true, false);
             var serverDriver = NetworkDriver.Create(networkInterface);
             Server.Instance.Start(serverDriver);

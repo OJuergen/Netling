@@ -1,9 +1,11 @@
 {
     "name": "Netling.Samples",
+    "rootNamespace": "",
     "references": [
         "GUID:1b6b778c06516f34ebcf355063a3066d",
         "GUID:95bff287bccaff940aa7eedfe374aa0d",
-        "GUID:f2d49d9fa7e7eb3418e39723a7d3b92f"
+        "GUID:f2d49d9fa7e7eb3418e39723a7d3b92f",
+        "GUID:e0cd26848372d4e5c891c569017e11f1"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

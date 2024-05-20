@@ -1,4 +1,4 @@
-﻿using Unity.Networking.Transport;
+﻿using Unity.Collections;
 using UnityEngine;
 
 namespace Netling.Samples

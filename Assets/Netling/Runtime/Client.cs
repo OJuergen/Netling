@@ -20,9 +20,8 @@ namespace Netling
         private const int MaxBytesPerMessage = 1300; // 1400 causes errors on receiving side
 
         private static Client _instance;
-        public static Client Instance => _instance = _instance ?? new Client();
+        public static Client Instance => _instance ??= new Client();
         public static bool IsConnected => Instance.State == ClientState.Connected;
-        public static bool IsConnecting => Instance.State == ClientState.Connecting;
         public ClientState State { get; private set; } = ClientState.Disconnected;
         public static bool IsHost => Server.IsActive && IsConnected;
         public bool UseLocalhost { get; set; }
@@ -103,9 +102,9 @@ namespace Netling
 
             Debug.Log("Connecting...");
             State = ClientState.Connecting;
-            NetworkEndPoint endpoint = string.IsNullOrEmpty(_ip) || UseLocalhost
-                ? NetworkEndPoint.LoopbackIpv4
-                : NetworkEndPoint.Parse(_ip, _port);
+            NetworkEndpoint endpoint = string.IsNullOrEmpty(_ip) || UseLocalhost
+                ? NetworkEndpoint.LoopbackIpv4
+                : NetworkEndpoint.Parse(_ip, _port);
             endpoint.Port = _port;
             _clientToServerConnection = _clientDriver.Connect(endpoint);
         }

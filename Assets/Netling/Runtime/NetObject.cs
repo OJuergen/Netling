@@ -1,6 +1,6 @@
 using System;
 using MufflonUtil;
-using Unity.Networking.Transport;
+using Unity.Collections;
 using UnityEditor;
 using UnityEngine;
 
@@ -107,7 +107,7 @@ namespace Netling
 
         public void Serialize(ref DataStreamWriter writer, bool fullLoad)
         {
-            Serialize(ref writer, fullLoad, networkBehaviour => true);
+            Serialize(ref writer, fullLoad, _ => true);
         }
 
         public void Serialize(ref DataStreamWriter writer, bool fullLoad, Predicate<NetBehaviour> behaviourFilter)

@@ -4,8 +4,11 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using MufflonUtil;
-using Unity.Networking.Transport;
+using Unity.Collections;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace Netling
 {
@@ -37,7 +40,7 @@ namespace Netling
                     .ToArray();
             _rpcMethodNames = rpcMethods.Select(info => info.Name).OrderBy(n => n).ToArray();
 #if UNITY_EDITOR
-            UnityEditor.EditorUtility.SetDirty(this);
+            EditorUtility.SetDirty(this);
 #endif
             OnEnable();
         }
@@ -45,7 +48,7 @@ namespace Netling
         private Type[] GetBaseTypes(Type type)
         {
             if (type == null) return new Type[0];
-            var types = new[] {type};
+            var types = new[] { type };
             if (type.BaseType == null) return types;
             Type t = type;
             while (t.BaseType != null)
@@ -205,7 +208,7 @@ namespace Netling
         public void SetDirtyAt(byte bitIndex)
         {
             if (bitIndex > 7) throw new IndexOutOfRangeException("Bit index cannot be larger than 7");
-            _dirtyMask |= (byte) (1 << bitIndex);
+            _dirtyMask |= (byte)(1 << bitIndex);
         }
 
         protected void SetField<T>(ref T field, T value, byte bitIndex)

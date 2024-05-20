@@ -5,7 +5,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using JetBrains.Annotations;
 using MufflonUtil;
-using Unity.Networking.Transport;
+using Unity.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 

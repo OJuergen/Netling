@@ -1,7 +1,7 @@
 using System;
 using JetBrains.Annotations;
 using Unity.Collections;
-using Unity.Networking.Transport;
+
 using UnityEngine;
 
 namespace Netling
@@ -78,8 +78,8 @@ namespace Netling
         /// Reads a <see cref="string"/> from the stream, corresponding to
         /// <see cref="WriteManagedString"/>.
         /// <br/><br/>
-        /// As opposed to <see cref="DataStreamReader.ReadString()"/>, this reads
-        /// a <see cref="string"/> (maximum length <see cref="int.MaxValue"/>) and not a <see cref="NativeString64"/>.
+        /// As opposed to <see cref="DataStreamReader.ReadFixedString"/>, this reads
+        /// a <see cref="string"/> (maximum length <see cref="int.MaxValue"/>) and not a <see cref="FixedString64Bytes"/>.
         /// </summary>
         public static string ReadManagedString(ref this DataStreamReader reader)
         {
