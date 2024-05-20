@@ -60,13 +60,16 @@ namespace Netling
             _timeout = timeout;
             _averageServerTimeOffset = 0;
             if (_clientDriver.IsCreated) _clientDriver.Dispose();
-            _clientDriver = new NetworkDriver(new BaselibNetworkInterface(), new SimulatorUtility.Parameters
+            var networkSettings = new NetworkSettings();
+            var simulatorParameters = new SimulatorUtility.Parameters
             {
                 MaxPacketCount = 30,
                 PacketDropPercentage = 5,
                 MaxPacketSize = 256,
                 PacketDelayMs = 50
-            }, new ReliableUtility.Parameters {WindowSize = 32});
+            };
+            networkSettings.AddRawParameterStruct(ref simulatorParameters);
+            _clientDriver = NetworkDriver.Create(networkSettings);
             _unreliablePipeline = useSimulationPipeline
                 ? _clientDriver.CreatePipeline(typeof(SimulatorPipelineStage))
                 : NetworkPipeline.Null;
@@ -140,8 +143,8 @@ namespace Netling
                         {
                             ActorNumber = streamReader.ReadInt();
                             Debug.Log($"Got assigned actor number {ActorNumber}");
-                            DataStreamWriter writer =
-                                _clientDriver.BeginSend(_reliablePipeline, _clientToServerConnection);
+                            _clientDriver.BeginSend(_reliablePipeline, _clientToServerConnection,
+                                out DataStreamWriter writer);
                             writer.WriteInt(Commands.AcknowledgeActorNumber);
                             _clientDriver.EndSend(writer);
                             DataSent?.Invoke(writer.Length);
@@ -149,8 +152,8 @@ namespace Netling
                         }
                         case Commands.AcceptPlayer:
                         {
-                            DataStreamWriter writer =
-                                _clientDriver.BeginSend(_reliablePipeline, _clientToServerConnection);
+                            _clientDriver.BeginSend(_reliablePipeline, _clientToServerConnection,
+                                out DataStreamWriter writer);
                             writer.WriteInt(Commands.RequestSpawnMessage);
                             writer.WriteInt(SceneManager.sceneCount);
                             for (var i = 0; i < SceneManager.sceneCount; i++)
@@ -200,7 +203,7 @@ namespace Netling
                                         ownerActorNumber, position, rotation, scene);
                                     if (netObject != null)
                                     {
-                                        netObject.Deserialize(ref streamReader, behaviour => true);
+                                        netObject.Deserialize(ref streamReader, _ => true);
                                         deserialized = true;
                                     }
                                 }
@@ -307,7 +310,7 @@ namespace Netling
                             NetAsset netAsset = NetAssetManager.Instance.Get(netAssetID);
                             NetAsset.RPC rpc = netAsset.DeserializeRPC(ref streamReader);
                             var messageInfo = new MessageInfo
-                                {SentServerTime = sentServerTime, SenderActorNumber = Server.ServerActorNumber};
+                                { SentServerTime = sentServerTime, SenderActorNumber = Server.ServerActorNumber };
                             rpc.Invoke(messageInfo);
                             break;
                         }
@@ -328,7 +331,7 @@ namespace Netling
                             NetObjectManager.RPC rpc =
                                 NetObjectManager.Instance.DeserializeRPC(ref streamReader, netBehaviour);
                             var messageInfo = new MessageInfo
-                                {SentServerTime = sentServerTime, SenderActorNumber = Server.ServerActorNumber};
+                                { SentServerTime = sentServerTime, SenderActorNumber = Server.ServerActorNumber };
                             rpc.Invoke(messageInfo);
                             break;
                         }
@@ -350,7 +353,7 @@ namespace Netling
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode loadSceneMode)
         {
-            DataStreamWriter writer = _clientDriver.BeginSend(_reliablePipeline, _clientToServerConnection);
+            _clientDriver.BeginSend(_reliablePipeline, _clientToServerConnection, out DataStreamWriter writer);
             writer.WriteInt(Commands.RequestSpawnMessage);
             writer.WriteInt(1);
             writer.WriteInt(scene.buildIndex);
@@ -363,7 +366,7 @@ namespace Netling
             if (State != ClientState.Connected)
                 throw new InvalidOperationException("Cannot send player data: client not connected");
 
-            DataStreamWriter writer = _clientDriver.BeginSend(_reliablePipeline, _clientToServerConnection);
+            _clientDriver.BeginSend(_reliablePipeline, _clientToServerConnection, out DataStreamWriter writer);
             writer.WriteInt(Commands.PlayerData);
             writer.WriteManagedString(playerData);
             _clientDriver.EndSend(writer);
@@ -422,7 +425,7 @@ namespace Netling
                 // message complete. Send if payload exists
                 if (objectsInMessage > 0)
                 {
-                    DataStreamWriter writer = _clientDriver.BeginSend(_reliablePipeline, _clientToServerConnection);
+                    _clientDriver.BeginSend(_reliablePipeline, _clientToServerConnection, out DataStreamWriter writer);
                     writer.WriteBytes(streamWriter.AsNativeArray());
                     _clientDriver.EndSend(writer);
                     DataSent?.Invoke(writer.Length);
@@ -450,7 +453,7 @@ namespace Netling
                 return;
             }
 
-            DataStreamWriter writer = _clientDriver.BeginSend(_unreliablePipeline, _clientToServerConnection);
+            _clientDriver.BeginSend(_reliablePipeline, _clientToServerConnection, out DataStreamWriter writer);
             writer.WriteInt(Commands.Ping);
             writer.WriteFloat(Time.time);
             _clientDriver.EndSend(writer);
@@ -468,7 +471,7 @@ namespace Netling
             if (State != ClientState.Connected)
                 throw new InvalidOperationException($"Cannot send game action {gameAction}: not connected");
 
-            DataStreamWriter streamWriter = _clientDriver.BeginSend(_reliablePipeline, _clientToServerConnection);
+            _clientDriver.BeginSend(_reliablePipeline, _clientToServerConnection, out DataStreamWriter streamWriter);
             streamWriter.WriteInt(Commands.GameAction);
             streamWriter.WriteInt(GameActionManager.Instance.GetID(gameAction));
             streamWriter.WriteInt(ActorNumber);
@@ -484,7 +487,7 @@ namespace Netling
             if (State != ClientState.Connected)
                 throw new InvalidOperationException($"Cannot send rpc {methodName}: not connected");
 
-            DataStreamWriter streamWriter = _clientDriver.BeginSend(_reliablePipeline, _clientToServerConnection);
+            _clientDriver.BeginSend(_reliablePipeline, _clientToServerConnection, out DataStreamWriter streamWriter);
             streamWriter.WriteInt(Commands.NetAssetRPC);
             streamWriter.WriteFloat(Server.Time);
             streamWriter.WriteInt(netAsset.NetID);
@@ -499,7 +502,7 @@ namespace Netling
             if (State != ClientState.Connected)
                 throw new InvalidOperationException($"Cannot send rpc {methodName}: not connected");
 
-            DataStreamWriter streamWriter = _clientDriver.BeginSend(_reliablePipeline, _clientToServerConnection);
+            _clientDriver.BeginSend(_reliablePipeline, _clientToServerConnection, out DataStreamWriter streamWriter);
             streamWriter.WriteInt(Commands.NetObjectRPC);
             streamWriter.WriteFloat(Server.Time);
             streamWriter.WriteInt(netBehaviour.NetObject.ID);

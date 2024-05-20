@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Networking.Transport;
+using Unity.Networking.Transport.Error;
 using Unity.Networking.Transport.Utilities;
 using UnityEngine;
 using UnityEngine.Profiling;
@@ -55,7 +56,7 @@ namespace Netling
         public event PlayerDataDelegate PlayerDataReceived;
 
         public void Init(ushort[] ports, float clientConnectionTimeout, bool acceptAllPlayers,
-                         bool useSimulationPipeline)
+            bool useSimulationPipeline)
         {
             _clientConnectionTimeout = clientConnectionTimeout;
             _endPoint = NetworkEndPoint.AnyIpv4;
@@ -67,14 +68,16 @@ namespace Netling
 
         public void Start()
         {
-//            _serverDriver = new UdpNetworkDriver(new ReliableUtility.Parameters {WindowSize = 32});
-            var serverDriver = new NetworkDriver(new BaselibNetworkInterface(), new SimulatorUtility.Parameters
+            var networkSettings = new NetworkSettings();
+            var simulationParameters = new SimulatorUtility.Parameters
             {
                 MaxPacketCount = 30,
                 PacketDropPercentage = 5,
                 MaxPacketSize = 256,
                 PacketDelayMs = 50
-            }, new ReliableUtility.Parameters {WindowSize = 32});
+            };
+            networkSettings.AddRawParameterStruct(ref simulationParameters);
+            var serverDriver = NetworkDriver.Create(networkSettings);
             Start(serverDriver);
         }
 
@@ -162,7 +165,7 @@ namespace Netling
                 _connections.Add(connection);
                 _lastPingTimes[connection] = Time;
                 Debug.Log($"Client connected with internal Id {connection.InternalId}. Assigning actor number.");
-                DataStreamWriter writer = _serverDriver.BeginSend(_reliablePipeline, connection);
+                _serverDriver.BeginSend(_reliablePipeline, connection, out DataStreamWriter writer);
                 writer.WriteInt(Commands.AssignActorNumber);
                 writer.WriteInt(connection.InternalId);
                 _serverDriver.EndSend(writer);
@@ -186,7 +189,7 @@ namespace Netling
                 // pop events
                 NetworkEvent.Type eventType;
                 while ((eventType = _serverDriver.PopEventForConnection(
-                    connection, out DataStreamReader streamReader)) != NetworkEvent.Type.Empty)
+                           connection, out DataStreamReader streamReader)) != NetworkEvent.Type.Empty)
                 {
                     if (eventType == NetworkEvent.Type.Data)
                     {
@@ -226,7 +229,7 @@ namespace Netling
                     case Commands.Ping:
                         _lastPingTimes[connection] = Time;
                         float sendLocalTime = streamReader.ReadFloat();
-                        DataStreamWriter writer = _serverDriver.BeginSend(_unreliablePipeline, connection);
+                        _serverDriver.BeginSend(_unreliablePipeline, connection, out DataStreamWriter writer);
                         writer.WriteInt(Commands.Ping);
                         writer.WriteFloat(sendLocalTime);
                         writer.WriteFloat(Time);
@@ -235,7 +238,7 @@ namespace Netling
                         break;
                     case Commands.RequestSpawnMessage:
                     {
-                        var connections = new NativeList<NetworkConnection>(1, Allocator.Temp) {connection};
+                        var connections = new NativeList<NetworkConnection>(1, Allocator.Temp) { connection };
                         SendSpawnMessage(NetObjectManager.Instance.NetObjects, connections);
                         connections.Dispose();
                         break;
@@ -303,7 +306,7 @@ namespace Netling
                         NetAsset netAsset = NetAssetManager.Instance.Get(netAssetID);
                         NetAsset.RPC rpc = netAsset.DeserializeRPC(ref streamReader);
                         var messageInfo = new MessageInfo
-                            {SentServerTime = sentServerTime, SenderActorNumber = senderActorNumber};
+                            { SentServerTime = sentServerTime, SenderActorNumber = senderActorNumber };
                         rpc.Invoke(messageInfo);
                         break;
                     }
@@ -323,7 +326,7 @@ namespace Netling
                         NetObjectManager.RPC rpc =
                             NetObjectManager.Instance.DeserializeRPC(ref streamReader, netBehaviour);
                         var messageInfo = new MessageInfo
-                            {SentServerTime = sentServerTime, SenderActorNumber = senderActorNumber};
+                            { SentServerTime = sentServerTime, SenderActorNumber = senderActorNumber };
                         rpc.Invoke(messageInfo);
                         break;
                     }
@@ -344,13 +347,12 @@ namespace Netling
             if (State != ServerState.Started)
                 throw new InvalidOperationException("Cannot accept player: Server not running");
 
-            for (var i = 0; i < _connections.Length; i++)
+            foreach (NetworkConnection connection in _connections)
             {
-                NetworkConnection connection = _connections[i];
                 if (connection.InternalId != actorNumber) continue;
                 Debug.Log($"Accepting player of client {actorNumber}");
-                var connections = new NativeList<NetworkConnection>(1, Allocator.Temp) {connection};
-                DataStreamWriter writer = _serverDriver.BeginSend(_reliablePipeline, connection);
+                var connections = new NativeList<NetworkConnection>(1, Allocator.Temp) { connection };
+                _serverDriver.BeginSend(_reliablePipeline, connection, out DataStreamWriter writer);
                 writer.WriteInt(Commands.AcceptPlayer);
                 _serverDriver.EndSend(writer);
                 SendNetAssetUpdate(true, connections);
@@ -449,17 +451,12 @@ namespace Netling
 
                 // message complete. Send if payload present
                 if (objectsInMessage == 0) return;
-                for (var connectionIndex = 0; connectionIndex < connections.Length; connectionIndex++)
-                {
-                    DataStreamWriter writer = _serverDriver.BeginSend(_reliablePipeline, connections[connectionIndex]);
-                    writer.WriteBytes(streamWriter.AsNativeArray());
-                    _serverDriver.EndSend(writer);
-                }
+                SendBytes(streamWriter.AsNativeArray(), _reliablePipeline, connections);
             }
         }
 
         public T SpawnNetObject<T>(T netBehaviourPrefab, Vector3 position, Quaternion rotation,
-                                   string sceneName = null, int actorNumber = ServerActorNumber)
+            string sceneName = null, int actorNumber = ServerActorNumber)
             where T : NetBehaviour
         {
             return SpawnNetObject(netBehaviourPrefab.NetObject, position, rotation, sceneName, actorNumber)
@@ -467,14 +464,14 @@ namespace Netling
         }
 
         public NetObject SpawnNetObject(NetObject netObjectPrefab, Vector3 position, Quaternion rotation,
-                                        string sceneName = null, int actorNumber = ServerActorNumber)
+            string sceneName = null, int actorNumber = ServerActorNumber)
         {
             if (State != ServerState.Started && State != ServerState.Debug)
                 throw new InvalidOperationException("Cannot spawn NetObject: Server not running");
 
             NetObject netObject =
                 NetObjectManager.Instance.SpawnOnServer(netObjectPrefab, position, rotation, sceneName, actorNumber);
-            if (State == ServerState.Started) SendSpawnMessage(new[] {netObject}, _connections);
+            if (State == ServerState.Started) SendSpawnMessage(new[] { netObject }, _connections);
             return netObject;
         }
 
@@ -530,12 +527,7 @@ namespace Netling
 
                 // message complete. Send if payload exists
                 if (assetsInMessage == 0) break;
-                for (var connectionIndex = 0; connectionIndex < connections.Length; connectionIndex++)
-                {
-                    DataStreamWriter writer = _serverDriver.BeginSend(_reliablePipeline, connections[connectionIndex]);
-                    writer.WriteBytes(streamWriter.AsNativeArray());
-                    _serverDriver.EndSend(writer);
-                }
+                SendBytes(streamWriter.AsNativeArray(), _reliablePipeline, connections);
             }
 
             Profiler.EndSample();
@@ -597,12 +589,7 @@ namespace Netling
 
                 // message complete. Send if payload exists
                 if (objectsInMessage == 0) break;
-                for (var connectionIndex = 0; connectionIndex < _connections.Length; connectionIndex++)
-                {
-                    DataStreamWriter writer = _serverDriver.BeginSend(_reliablePipeline, _connections[connectionIndex]);
-                    writer.WriteBytes(streamWriter.AsNativeArray());
-                    _serverDriver.EndSend(writer);
-                }
+                SendBytes(streamWriter.AsNativeArray(), _reliablePipeline, _connections);
             }
 
             Profiler.EndSample();
@@ -620,7 +607,7 @@ namespace Netling
 
         public void UnspawnNetObject(NetObject netObject)
         {
-            UnspawnNetObjects(new[] {netObject});
+            UnspawnNetObjects(new[] { netObject });
         }
 
         public void UnspawnNetObjects(NetObject[] netObjects)
@@ -644,17 +631,12 @@ namespace Netling
                     streamWriter.WriteInt(netObject.ID);
                 }
 
-                for (var i = 0; i < _connections.Length; i++)
-                {
-                    DataStreamWriter writer = _serverDriver.BeginSend(_reliablePipeline, _connections[i]);
-                    writer.WriteBytes(streamWriter.AsNativeArray());
-                    _serverDriver.EndSend(writer);
-                }
+                SendBytes(streamWriter.AsNativeArray(), _reliablePipeline, _connections);
             }
         }
 
         public void SendGameAction(GameAction gameAction, GameAction.IParameters parameters, int actorNumber,
-                                   float triggerTime)
+            float triggerTime)
         {
             if (State == ServerState.Debug) return;
             if (State != ServerState.Started)
@@ -668,16 +650,11 @@ namespace Netling
             streamWriter.WriteBool(true); // valid
             gameAction.SerializeParameters(ref streamWriter, parameters);
 
-            for (var i = 0; i < _connections.Length; i++)
-            {
-                DataStreamWriter writer = _serverDriver.BeginSend(_reliablePipeline, _connections[i]);
-                writer.WriteBytes(streamWriter.AsNativeArray());
-                _serverDriver.EndSend(writer);
-            }
+            SendBytes(streamWriter.AsNativeArray(), _reliablePipeline, _connections);
         }
 
         public void DenyGameAction(GameAction gameAction, GameAction.IParameters parameters, int actorNumber,
-                                   float triggerTime)
+            float triggerTime)
         {
             if (State == ServerState.Debug) return;
             if (State != ServerState.Started)
@@ -691,13 +668,7 @@ namespace Netling
             streamWriter.WriteBool(false); // invalid
             gameAction.SerializeParameters(ref streamWriter, parameters);
 
-            for (var i = 0; i < _connections.Length; i++)
-                if (_connections[i].InternalId == actorNumber)
-                {
-                    DataStreamWriter writer = _serverDriver.BeginSend(_reliablePipeline, _connections[i]);
-                    writer.WriteBytes(streamWriter.AsNativeArray());
-                    _serverDriver.EndSend(writer);
-                }
+            SendBytes(streamWriter.AsNativeArray(), _reliablePipeline, _connections);
         }
 
         public void SendRPC(NetAsset netAsset, string methodName, object[] args)
@@ -712,12 +683,7 @@ namespace Netling
             streamWriter.WriteInt(netAsset.NetID);
             netAsset.SerializeRPC(ref streamWriter, methodName, args);
 
-            for (var i = 0; i < _connections.Length; i++)
-            {
-                DataStreamWriter writer = _serverDriver.BeginSend(_reliablePipeline, _connections[i]);
-                writer.WriteBytes(streamWriter.AsNativeArray());
-                _serverDriver.EndSend(writer);
-            }
+            SendBytes(streamWriter.AsNativeArray(), _reliablePipeline, _connections);
         }
 
         public void SendRPC(NetBehaviour netBehaviour, string methodName, object[] args)
@@ -734,10 +700,19 @@ namespace Netling
                 streamWriter.WriteUShort(netBehaviour.NetBehaviourID);
                 NetObjectManager.Instance.SerializeRPC(ref streamWriter, netBehaviour, methodName, args);
 
-                for (var i = 0; i < _connections.Length; i++)
+                SendBytes(streamWriter.AsNativeArray(), _reliablePipeline, _connections);
+            }
+        }
+
+        private void SendBytes(NativeArray<byte> bytes, NetworkPipeline pipeline,
+            NativeList<NetworkConnection> connections)
+        {
+            foreach (NetworkConnection connection in connections)
+            {
+                var result = (StatusCode)_serverDriver.BeginSend(pipeline, connection, out DataStreamWriter writer);
+                if (result == StatusCode.Success)
                 {
-                    DataStreamWriter writer = _serverDriver.BeginSend(_reliablePipeline, _connections[i]);
-                    writer.WriteBytes(streamWriter.AsNativeArray());
+                    writer.WriteBytes(bytes);
                     _serverDriver.EndSend(writer);
                 }
             }
