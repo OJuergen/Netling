@@ -1,12 +1,12 @@
 {
   "name": "com.mufflonzucht.netling",
   "displayName": "Netling",
-  "version": "0.4.0",
-  "unity": "2019.3",
+  "version": "0.5.0",
+  "unity": "2022.3",
   "description": "High-level networking library based on the new Unity transport package.",
   "type": "library",
   "dependencies": {
-    "com.mufflonzucht.mufflonutil": "0.3.1",
-    "com.unity.transport": "0.3.1-preview.4"
+    "com.mufflonzucht.mufflonutil": "0.9.0",
+    "com.unity.transport": "2.2.1"
   }
 }
