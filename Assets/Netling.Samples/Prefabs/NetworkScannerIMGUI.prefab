@@ -46,11 +46,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _toggleActiveKey: 284
   _name: Network Scanner IMGUI
-  _screenRect:
+  _rect:
     serializedVersion: 2
     x: 430
-    y: 10
-    width: 250
-    height: 500
+    y: 0
+    width: 200
+    height: 150
   _isActive: 1
+  _padding: 5
   _port: 9099

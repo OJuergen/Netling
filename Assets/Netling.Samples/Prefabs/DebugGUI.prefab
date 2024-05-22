@@ -46,10 +46,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _toggleActiveKey: 282
   _name: Debug GUI
-  _screenRect:
+  _rect:
     serializedVersion: 2
     x: 10
-    y: 10
+    y: 0
     width: 200
-    height: 500
+    height: 150
   _isActive: 1
+  _padding: 5
