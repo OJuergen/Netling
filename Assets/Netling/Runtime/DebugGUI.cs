@@ -2,13 +2,10 @@
 
 namespace Netling
 {
-    public sealed class DebugGUI : MonoBehaviour
+    public sealed class DebugGUI : ToggleableIMGUI
     {
         private float _rtt;
         private float _latency;
-        [SerializeField, Tooltip("Button to toggle this UI")]
-        private KeyCode _toggleActiveKey = KeyCode.F1;
-        [SerializeField] private bool _isActive = true;
 
         private void OnEnable()
         {
@@ -20,22 +17,14 @@ namespace Netling
             Client.PingReceived -= OnPingReceived;
         }
 
-        private void Update()
-        {
-            if (Input.GetKeyDown(_toggleActiveKey)) _isActive = !_isActive;
-        }
-
         private void OnPingReceived(float roundTripTime, float latency)
         {
             _rtt = roundTripTime;
             _latency = latency;
         }
 
-        private void OnGUI()
+        protected override void OnIMGUI()
         {
-            if (!_isActive) return;
-            GUILayout.Label($"Debug GUI. Toggle with {_toggleActiveKey}");
-
             if (!Server.IsActive && GUILayout.Button("Start Server"))
             {
                 Server.Instance.Start();

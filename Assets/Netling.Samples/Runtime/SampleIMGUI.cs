@@ -3,27 +3,14 @@ using UnityEngine.SceneManagement;
 
 namespace Netling.Samples
 {
-    public sealed class SampleIMGUI : MonoBehaviour
+    public sealed class SampleIMGUI : ToggleableIMGUI
     {
         [SerializeField, Tooltip("Name of additive sub scene")]
         private string _subSceneName = "NetworkTestSub";
-        [SerializeField, Tooltip("Button to toggle this UI")]
-        private KeyCode _toggleActiveKey = KeyCode.F2;
-        [SerializeField] private Rect _screenRect = new Rect(200, 0, 200, 500);
-        [SerializeField] private bool _isActive = true;
         [SerializeField] private NetObject _netObjectPrefab;
 
-        private void Update()
+        protected override void OnIMGUI()
         {
-            if (Input.GetKeyDown(_toggleActiveKey)) _isActive = !_isActive;
-        }
-
-        private void OnGUI()
-        {
-            GUILayout.BeginArea(_screenRect);
-            if (!_isActive) return;
-            GUILayout.Label($"Sample IMGUI. Toggle with {_toggleActiveKey}");
-
             if (!SceneManager.GetSceneByName(_subSceneName).isLoaded && GUILayout.Button("Load Network Test Sub Scene"))
             {
                 SceneManager.LoadSceneAsync(_subSceneName, LoadSceneMode.Additive);
@@ -40,8 +27,6 @@ namespace Netling.Samples
             {
                 Server.Instance.SpawnNetObject(_netObjectPrefab, Vector3.zero, Quaternion.identity, _subSceneName);
             }
-
-            GUILayout.EndArea();
         }
     }
 }

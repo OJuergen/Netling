@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 8524434188381743947}
   - component: {fileID: 8873952179601860831}
   m_Layer: 0
-  m_Name: Client
+  m_Name: ClientRunner
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -24,12 +24,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1393508790795396146}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &8873952179601860831
 MonoBehaviour:
@@ -48,9 +49,6 @@ MonoBehaviour:
   _useSimulationPipeline: 0
   _port: 9099
   _autoConnect: 0
-  _timeout: 30
-  _networkObjectManager: {fileID: 11400000, guid: 120646e1b2b2e154fbdcdb951369c3e9,
-    type: 2}
-  _networkObjectUpdateRate: 20
+  _timeout: 10
+  _netObjectUpdateRate: 20
   _pingRate: 10
-  _gameActionManager: {fileID: 11400000, guid: 49e6e14beca6f3c459ea861e68858582, type: 2}

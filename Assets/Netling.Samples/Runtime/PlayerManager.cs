@@ -7,8 +7,8 @@ namespace Netling.Samples
     public class PlayerManager
     {
         private static PlayerManager _instance;
-        [NotNull] public static PlayerManager Instance => _instance = _instance ?? new PlayerManager();
-        private readonly Dictionary<int, Player> _players = new Dictionary<int, Player>();
+        [NotNull] public static PlayerManager Instance => _instance ??= new PlayerManager();
+        private readonly Dictionary<int, Player> _players = new();
         private Player _playerPrefab;
 
         public void Init([NotNull] Player playerPrefab)
@@ -37,24 +37,21 @@ namespace Netling.Samples
 
         private void OnClientDisconnected(int id)
         {
-            if (!_players.ContainsKey(id))
+            if (!_players.TryGetValue(id, out Player player))
             {
-                Debug.LogWarning($"Player with unknown ID {id} disconnected");
+                Debug.Log($"Player with unknown ID {id} disconnected");
                 return;
             }
 
-            Object.Destroy(_players[id].gameObject);
+            Object.Destroy(player.gameObject);
         }
 
         public void Register(Player player)
         {
-            if (_players.ContainsKey(player.OwnerActorNumber))
+            if (!_players.TryAdd(player.OwnerActorNumber, player))
             {
                 Debug.LogWarning($"Player with ID {player.OwnerActorNumber} is already connected");
-                return;
             }
-
-            _players.Add(player.OwnerActorNumber, player);
         }
 
         public void Unregister(Player player)
@@ -70,7 +67,7 @@ namespace Netling.Samples
 
         public Player Get(int actorNumber)
         {
-            return _players.TryGetValue(actorNumber, out Player player) ? player : null;
+            return _players.GetValueOrDefault(actorNumber);
         }
     }
 }
