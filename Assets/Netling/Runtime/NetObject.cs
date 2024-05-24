@@ -3,6 +3,7 @@ using MufflonUtil;
 using Unity.Collections;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace Netling
 {
@@ -96,9 +97,10 @@ namespace Netling
             return _netBehaviours[netBehaviourID];
         }
 
-        public NetObject Create(int id, ushort prefabIndex, int ownerActorNumber, Vector3 position, Quaternion rotation)
+        public NetObject Create(int id, ushort prefabIndex, Scene scene, Transform parent, Vector3 position, Quaternion rotation, int ownerActorNumber)
         {
-            NetObject netObject = Instantiate(this, position, rotation);
+            NetObject netObject = Instantiate(this, position, rotation, parent);
+            if(parent == null && scene.isLoaded) SceneManager.MoveGameObjectToScene(netObject.gameObject, scene);
             netObject.Init(id, prefabIndex, ownerActorNumber);
             return netObject;
         }

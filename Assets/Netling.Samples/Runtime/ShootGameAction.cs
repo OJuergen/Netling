@@ -49,10 +49,11 @@ namespace Netling.Samples
         {
             Player player = PlayerManager.Instance.Get(actorNumber);
             var gunController = player.GetComponent<GunController>();
+            GameObject bulletContainer = GameObject.Find("BulletContainer") ?? new GameObject("BulletContainer");
             if (Server.IsActive)
             {
-                Bullet bullet = Server.Instance.SpawnNetObject(
-                    gunController.BulletPrefab, parameters.MuzzlePosition, parameters.MuzzleOrientation);
+                Bullet bullet = Server.Instance.SpawnNetObject(gunController.BulletPrefab, default,
+                    bulletContainer.transform, parameters.MuzzlePosition, parameters.MuzzleOrientation);
                 // initialize position to compensate for latency
                 bullet.InitOnServer(parameters.MuzzlePosition, parameters.MuzzleOrientation, triggerTime);
             }

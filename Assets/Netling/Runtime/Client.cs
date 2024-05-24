@@ -192,14 +192,16 @@ namespace Netling
                                 Vector3 position = streamReader.ReadVector3();
                                 Quaternion rotation = streamReader.ReadQuaternion();
                                 int sceneBuildIndex = streamReader.ReadInt();
+                                string parentPath = streamReader.ReadManagedString();
                                 int size = streamReader.ReadInt();
                                 int bytesRead = streamReader.GetBytesRead();
                                 Scene scene = SceneManager.GetSceneByBuildIndex(sceneBuildIndex);
                                 var deserialized = false;
                                 if (scene != null && scene.isLoaded)
                                 {
+                                    Transform parent = GameObject.Find(parentPath)?.transform;
                                     NetObject netObject = NetObjectManager.Instance.SpawnOnClient(netObjID, prefabIndex,
-                                        ownerActorNumber, position, rotation, scene);
+                                        scene, parent, position, rotation, ownerActorNumber);
                                     if (netObject != null)
                                     {
                                         netObject.Deserialize(ref streamReader, _ => true);

@@ -23,7 +23,7 @@ namespace Netling
             if (_maxPort < _minPort || _minPort < 1024)
                 throw new InvalidOperationException("Illegal port range. Must be between 1024 and 65535");
             ushort[] ports = Enumerable.Range(_minPort, _maxPort - _minPort + 1)
-                .Select(port => (ushort) port)
+                .Select(port => (ushort)port)
                 .ToArray();
             Server.Instance.Init(ports, _clientConnectionTimeout, _acceptAllPlayers, _useSimulationPipeline);
             if (_autoStart) Server.Instance.Start();
@@ -46,6 +46,7 @@ namespace Netling
                 _lastNetObjectUpdateTime = Time.time;
                 Server.Instance.SendNetObjectsUpdate();
             }
+
             if (Time.time > _lastNetAssetUpdateTime + 1 / _netAssetUpdateRate)
             {
                 _lastNetAssetUpdateTime = Time.time;

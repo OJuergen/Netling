@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using MufflonUtil;
 using Unity.Collections;
 using Unity.Networking.Transport;
 using Unity.Networking.Transport.Error;
 using Unity.Networking.Transport.Utilities;
 using UnityEngine;
 using UnityEngine.Profiling;
+using UnityEngine.SceneManagement;
 
 namespace Netling
 {
@@ -453,6 +455,8 @@ namespace Netling
                         objectWriter.WriteVector3(netObject.transform.position);
                         objectWriter.WriteQuaternion(netObject.transform.rotation);
                         objectWriter.WriteInt(netObject.gameObject.scene.buildIndex);
+                        Transform parent = netObject.transform.parent;
+                        objectWriter.WriteManagedString(parent == null ? "/" : parent.GetFullPath());
                         DataStreamWriter objectSizeWriter = objectWriter;
                         objectWriter.WriteInt(0);
                         int length = objectWriter.Length;
@@ -470,22 +474,22 @@ namespace Netling
             }
         }
 
-        public T SpawnNetObject<T>(T netBehaviourPrefab, Vector3 position, Quaternion rotation,
-            string sceneName = null, int actorNumber = ServerActorNumber)
-            where T : NetBehaviour
+        public T SpawnNetObject<T>(T netBehaviourPrefab, Scene scene, Transform parent, Vector3 position,
+            Quaternion rotation, int actorNumber = ServerActorNumber) where T : NetBehaviour
         {
-            return SpawnNetObject(netBehaviourPrefab.NetObject, position, rotation, sceneName, actorNumber)
+            return SpawnNetObject(netBehaviourPrefab.NetObject, scene, parent, position, rotation, actorNumber)
                 .GetComponent<T>();
         }
 
-        public NetObject SpawnNetObject(NetObject netObjectPrefab, Vector3 position, Quaternion rotation,
-            string sceneName = null, int actorNumber = ServerActorNumber)
+        public NetObject SpawnNetObject(NetObject netObjectPrefab, Scene scene, Transform parent, Vector3 position,
+            Quaternion rotation, int actorNumber = ServerActorNumber)
         {
             if (State != ServerState.Started && State != ServerState.Debug)
                 throw new InvalidOperationException("Cannot spawn NetObject: Server not running");
 
             NetObject netObject =
-                NetObjectManager.Instance.SpawnOnServer(netObjectPrefab, position, rotation, sceneName, actorNumber);
+                NetObjectManager.Instance.SpawnOnServer(netObjectPrefab, position, rotation, scene, parent,
+                    actorNumber);
             if (State == ServerState.Started) SendSpawnMessage(new[] { netObject }, _connections);
             return netObject;
         }

@@ -14,7 +14,9 @@ namespace Netling
 
         [SerializeField] private float _lerpFactor = 10;
         [SerializeField] private float _jumpThreshold = 1;
+        [SerializeField] private Space _space = Space.World;
 
+        private Transform _transform;
         private Vector3 _latestPosition;
         private Quaternion _latestRotation;
         private readonly PredictedVector3 _predictedPosition = new();
@@ -47,25 +49,24 @@ namespace Netling
 
         private void Awake()
         {
-            Transform syncTransform = transform;
-            _latestPosition = syncTransform.position;
-            _latestRotation = syncTransform.rotation;
+            _transform = transform;
+            _latestPosition = _space == Space.World ? _transform.position : _transform.localPosition;
+            _latestRotation = _space == Space.World ? _transform.rotation : _transform.localRotation;
         }
 
         private void Update()
         {
-            Transform t = transform;
 
             // submit
             if (HasAuthority)
             {
                 _lastUpdateTime = Server.Time;
-                _latestPosition = t.position;
-                _latestRotation = t.rotation;
+                _latestPosition = _space == Space.World ? _transform.position : _transform.localPosition;
+                _latestRotation = _space == Space.World ? _transform.rotation : _transform.localRotation;
                 _predictedPosition.ReceiveValue(_lastUpdateTime, _latestPosition);
                 _predictedRotation.ReceiveValue(_lastUpdateTime, _latestRotation);
-                SetDirty((byte) DirtyMask.Position);
-                SetDirty((byte) DirtyMask.Rotation);
+                SetDirty((byte)DirtyMask.Position);
+                SetDirty((byte)DirtyMask.Rotation);
             }
             // receive
             else if (!Hold) UpdateTransform();
@@ -73,30 +74,31 @@ namespace Netling
 
         private void UpdateTransform()
         {
-            Transform t = transform;
+            Vector3 position = _space == Space.World ? _transform.position : _transform.localPosition;
+            Quaternion rotation = _space == Space.World ? _transform.rotation : _transform.localRotation;
             switch (_mode)
             {
                 case Mode.Direct:
                 {
-                    t.position = _latestPosition;
-                    t.rotation = _latestRotation;
+                    position = _latestPosition;
+                    rotation = _latestRotation;
                     break;
                 }
                 case Mode.Lerp:
-                    t.position = Vector3.Lerp(t.position, _latestPosition, _lerpFactor * Time.deltaTime);
-                    t.rotation = Quaternion.Lerp(t.rotation, _latestRotation, _lerpFactor * Time.deltaTime);
+                    position = Vector3.Lerp(position, _latestPosition, _lerpFactor * Time.deltaTime);
+                    rotation = Quaternion.Lerp(rotation, _latestRotation, _lerpFactor * Time.deltaTime);
 
-                    if (Vector3.Distance(t.position, _latestPosition) > _jumpThreshold)
+                    if (Vector3.Distance(position, _latestPosition) > _jumpThreshold)
                     {
-                        t.position = _latestPosition;
-                        t.rotation = _latestRotation;
+                        position = _latestPosition;
+                        rotation = _latestRotation;
                     }
 
                     break;
                 case Mode.Predicted:
                 {
-                    t.position = _predictedPosition.Get(Server.Time);
-                    t.rotation = _predictedRotation.Get(Server.Time);
+                    position = _predictedPosition.Get(Server.Time);
+                    rotation = _predictedRotation.Get(Server.Time);
                     break;
                 }
                 case Mode.PredictedLerp:
@@ -105,20 +107,31 @@ namespace Netling
                     Vector3 predictedPosition = _predictedPosition.Get(Server.Time);
                     Quaternion predictedRotation = _predictedRotation.Get(Server.Time);
                     if (!_predictedPosition.ReceivedTwice
-                        || Vector3.Distance(t.position, predictedPosition) > _jumpThreshold)
+                        || Vector3.Distance(position, predictedPosition) > _jumpThreshold)
                     {
-                        t.position = predictedPosition;
-                        t.rotation = predictedRotation;
+                        position = predictedPosition;
+                        rotation = predictedRotation;
                         break;
                     }
 
-                    t.position = Vector3.Lerp(t.position, predictedPosition, _lerpFactor * Time.deltaTime);
-                    t.rotation = Quaternion.Lerp(t.rotation, predictedRotation, _lerpFactor * Time.deltaTime);
+                    position = Vector3.Lerp(position, predictedPosition, _lerpFactor * Time.deltaTime);
+                    rotation = Quaternion.Lerp(rotation, predictedRotation, _lerpFactor * Time.deltaTime);
                     break;
                 }
                 default:
                     enabled = false;
                     throw new Exception($"Unknown client side prediction mode {_mode}. Disabled script.");
+            }
+
+            if (_space == Space.World)
+            {
+                _transform.position = position;
+                _transform.rotation = rotation;
+            }
+            else
+            {
+                _transform.localPosition = position;
+                _transform.localRotation = rotation;
             }
 
             Updated?.Invoke(this);
@@ -149,7 +162,7 @@ namespace Netling
 
         protected override void Deserialize(ref DataStreamReader reader, byte dirtyMask)
         {
-            var mask = (DirtyMask) dirtyMask;
+            var mask = (DirtyMask)dirtyMask;
             if (mask != 0)
                 _lastUpdateTime = reader.ReadFloat();
             if (mask.HasFlag(DirtyMask.Position))
@@ -167,7 +180,7 @@ namespace Netling
 
         protected override void Serialize(ref DataStreamWriter writer, byte dirtyMask)
         {
-            var mask = (DirtyMask) dirtyMask;
+            var mask = (DirtyMask)dirtyMask;
             if (dirtyMask != 0)
                 writer.WriteFloat(_lastUpdateTime);
             if (mask.HasFlag(DirtyMask.Position))
@@ -184,10 +197,19 @@ namespace Netling
         private void OnDrawGizmosSelected()
         {
             if (Server.IsActive || !Application.isPlaying) return;
+
+            Vector3 latestPosition = _space == Space.World || _transform.parent == null
+                ? _latestPosition
+                : _transform.parent.TransformPoint(_latestPosition);
             Gizmos.color = Color.green;
-            Gizmos.DrawWireSphere(_latestPosition, 0.1f);
+            Gizmos.DrawWireSphere(latestPosition, 0.1f);
+            
+            Vector3 predictedPosition = _space == Space.World || _transform.parent == null
+                ? _predictedPosition.Get(Server.Time)
+                : _transform.parent.TransformPoint(_predictedPosition.Get(Server.Time));
             Gizmos.color = Color.yellow;
-            Gizmos.DrawWireSphere(_predictedPosition.Get(Server.Time), 0.1f);
+            Gizmos.DrawWireSphere(predictedPosition, 0.1f);
+            
             Gizmos.color = Color.red;
             Gizmos.DrawWireSphere(transform.position, 0.1f);
         }
