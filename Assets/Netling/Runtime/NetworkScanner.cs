@@ -129,7 +129,7 @@ namespace Netling
             }
         }
 
-        private string GetLocalIPAddress()
+        public string GetLocalIPAddress()
         {
             return (from netInterface in NetworkInterface.GetAllNetworkInterfaces()
                 where netInterface.OperationalStatus == OperationalStatus.Up
