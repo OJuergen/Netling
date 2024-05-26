@@ -6,53 +6,46 @@ using System.Threading.Tasks;
 using Unity.Collections;
 using Unity.Networking.Transport;
 using UnityEngine;
-using Ping = System.Net.NetworkInformation.Ping;
 
 namespace Netling
 {
     public class NetworkScanner
     {
         private readonly List<string> _activeServers = new();
-
-
         private NetworkDriver _networkDriver;
-        public NetworkScannerState State { get; private set; }
         public int TimeoutMilliseconds { get; set; } = 100;
 
-        public enum NetworkScannerState
-        {
-            Idle,
-            Scanning,
-            Probing
-        }
+        public bool IsScanning { get; private set; }
 
-        public async Task<string[]> ProbeNetwork(ushort port)
+        public async Task<string[]> ScanNetwork(ushort port)
         {
-            if (State != NetworkScannerState.Idle)
+            if (IsScanning)
             {
-                Debug.LogError($"Cannot start probing when in state {State}");
+                Debug.LogError($"Cannot start scan: already scanning. Wait until finished.");
                 return Array.Empty<string>();
             }
 
-            string[] activeIPs = await ScanNetwork();
-
-            State = NetworkScannerState.Probing;
+            IsScanning = true;
             _activeServers.Clear();
-            Dictionary<string, NetworkConnection> connections = new();
+            
+            string localIP = GetLocalIPAddress();
+            string baseIP = localIP[..(localIP.LastIndexOf('.') + 1)];
+            string[] localNetworkIPs = Enumerable.Range(1, 254).Select(id => baseIP + id).ToArray();
+            Dictionary<string, NetworkConnection> pendingConnections = new();
             if (_networkDriver.IsCreated) _networkDriver.Dispose();
             _networkDriver = NetworkDriver.Create();
             _networkDriver.CreatePipeline(typeof(ReliableSequencedPipelineStage));
 
-            foreach (string ipAddress in activeIPs)
+            foreach (string ipAddress in localNetworkIPs)
             {
-                connections[ipAddress] = _networkDriver.Connect(NetworkEndpoint.Parse(ipAddress, port));
+                pendingConnections[ipAddress] = _networkDriver.Connect(NetworkEndpoint.Parse(ipAddress, port));
             }
 
             float startTime = Time.time;
             while (Time.time < startTime + TimeoutMilliseconds / 1000f)
             {
                 _networkDriver.ScheduleUpdate().Complete();
-                foreach ((string ipAddress, NetworkConnection connection) in connections)
+                foreach ((string ipAddress, NetworkConnection connection) in pendingConnections)
                 {
                     NetworkEvent.Type eventType;
                     while ((eventType = _networkDriver.PopEventForConnection(connection, out DataStreamReader _)) !=
@@ -68,65 +61,19 @@ namespace Netling
 
                 foreach (string activeServer in _activeServers)
                 {
-                    connections.Remove(activeServer); // already successfully checked
+                    pendingConnections.Remove(activeServer); // already successfully checked
                 }
 
                 await Task.Yield();
             }
 
-            foreach ((string _, NetworkConnection connection) in connections)
+            foreach ((string _, NetworkConnection connection) in pendingConnections)
             {
                 connection.Disconnect(_networkDriver);
             }
 
-            State = NetworkScannerState.Idle;
+            IsScanning = false;
             return _activeServers.ToArray();
-        }
-
-        public async Task<string[]> ScanNetwork()
-        {
-            if (State != NetworkScannerState.Idle)
-            {
-                Debug.LogError($"Cannot start scanning when in state {State}");
-                return Array.Empty<string>();
-            }
-
-            State = NetworkScannerState.Scanning;
-
-            string localIP = GetLocalIPAddress();
-            if (localIP == null)
-            {
-                Debug.LogError("Unable to get local IP address.");
-                State = NetworkScannerState.Idle;
-                return Array.Empty<string>();
-            }
-
-            string baseIP = localIP[..(localIP.LastIndexOf('.') + 1)];
-
-            string[] activeIPs =
-                (await Task.WhenAll(Enumerable.Range(1, 254)
-                    .Select(id => baseIP + id)
-                    .Select(async ip => (ip, isActive: await PingAddress(ip)))))
-                .Where(result => result.isActive)
-                .Select(result => result.ip)
-                .ToArray();
-            State = NetworkScannerState.Idle;
-            return activeIPs;
-        }
-
-        private async Task<bool> PingAddress(string ip)
-        {
-            var ping = new Ping();
-            try
-            {
-                PingReply reply = await Task.Run(() => ping.Send(ip, TimeoutMilliseconds));
-                bool isActive = reply is { Status: IPStatus.Success };
-                return isActive;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
         }
 
         public string GetLocalIPAddress()

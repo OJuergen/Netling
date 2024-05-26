@@ -9,34 +9,23 @@ namespace Netling
 
         protected override void OnIMGUI()
         {
-            if (GUILayout.Button("Scan Network"))
+            if (_networkScanner.IsScanning)
+            {
+                GUILayout.Label("Scanning...");
+            }
+            else if (GUILayout.Button("Scan Network"))
             {
                 ScanNetwork();
-            }
-
-            if (GUILayout.Button("Probe Network"))
-            {
-                ProbeNetwork();
             }
         }
 
         private async void ScanNetwork()
         {
-            string[] activeIPs = await _networkScanner.ScanNetwork();
+            string[] activeIPs = await _networkScanner.ScanNetwork(_port);
             if (activeIPs.Length == 0) Debug.Log("No Active IPs found");
             foreach (string ip in activeIPs)
             {
                 Debug.Log($"Active IP {ip}");
-            }
-        }
-
-        private async void ProbeNetwork()
-        {
-            string[] serverIPs = await _networkScanner.ProbeNetwork(_port);
-            if (serverIPs.Length == 0) Debug.Log("No Servers found");
-            foreach (string ip in serverIPs)
-            {
-                Debug.Log($"Active Server under IP {ip}");
             }
         }
     }
