@@ -29,7 +29,7 @@ namespace Netling
 
         public delegate void NetObjectDelegate(NetObject netObject);
 
-        [SerializeField, NotEditable] private List<RPCInfo> _RPCInfo = new();
+        [SerializeField, NotEditable] private List<RPCInfo> _rpcInfo = new();
 
         private readonly Dictionary<(ushort prefabIndex, ushort netBehaviourID, ushort methodIndex), RPCDelegate>
             _rpcDelegates = new();
@@ -46,9 +46,9 @@ namespace Netling
         [Serializable]
         public struct RPCInfo
         {
-            [UsedImplicitly] public NetObject Prefab;
-            [UsedImplicitly] public NetBehaviour NetBehaviour;
-            [UsedImplicitly] public string MethodName;
+            [field: SerializeField] public NetObject Prefab { get; set; }
+            [field: SerializeField] public NetBehaviour NetBehaviour { get; set; }
+            [field: SerializeField] public string MethodName { get; set; }
         }
 
         private class RPCInfoComparer : IComparer<RPCInfo>
@@ -74,7 +74,7 @@ namespace Netling
 
         private void CollectRPCInfo()
         {
-            _RPCInfo.Clear();
+            _rpcInfo.Clear();
             for (ushort i = 0; i < _netObjectPrefabs.Count; i++)
             {
                 if (_netObjectPrefabs[i] != null) AddRPCInfo(_netObjectPrefabs[i]);
@@ -97,7 +97,7 @@ namespace Netling
                             t.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
                         .Where(info => info.GetCustomAttributes(typeof(NetlingRPCAttribute), false).Length > 0)
                         .ToArray();
-                _RPCInfo.AddRange(rpcMethods.Select(info => new RPCInfo
+                _rpcInfo.AddRange(rpcMethods.Select(info => new RPCInfo
                 {
                     Prefab = netBehaviour.NetObject,
                     NetBehaviour = netBehaviour,
@@ -209,7 +209,7 @@ namespace Netling
                             NetBehaviour = netBehaviour,
                             MethodName = rpcMethodInfo.Name
                         };
-                        var methodIndex = (ushort)_RPCInfo.IndexOf(rpcInfo);
+                        var methodIndex = (ushort)_rpcInfo.IndexOf(rpcInfo);
                         (ushort PrefabIndex, ushort NetBehaviourID, ushort MethodIndex) rpcID =
                             (prefabIndex, netBehaviour.NetBehaviourID, methodIndex);
                         ParameterInfo[] parameterInfos = rpcMethodInfo.GetParameters();
@@ -309,7 +309,8 @@ namespace Netling
             {
                 if (!scene.isLoaded) throw new ArgumentException($"Scene {scene} not loaded");
                 NetObject netObject =
-                    _netObjectPrefabs[prefabIndex].Create(id, prefabIndex, scene, parent, position, rotation, ownerActorNumber);
+                    _netObjectPrefabs[prefabIndex].Create(id, prefabIndex, scene, parent, position, rotation,
+                        ownerActorNumber);
                 _objectsById.Add(id, netObject);
                 _objectCount = _objectsById.Count;
                 NetObjectAdded?.Invoke(netObject);
@@ -355,21 +356,48 @@ namespace Netling
                                         "Not spawned yet or already destroyed?");
         }
 
+        /// <summary>
+        /// Creates a delegate from method info (<see cref="MethodInfo"/>).
+        /// The delegate will take as parameters: a NetBehaviour (<see cref="NetBehaviour"/>), the message network info
+        /// (<see cref="MessageInfo"/>) and the parameters of the method that are <i>not</i> of type MessageInfo.
+        /// The delegate will invoke the method on the network behaviour using the message info to populate any
+        /// arguments of that type.
+        ///
+        /// (NetBehaviour nb, MessageInfo mi, object[] args) => methodInfo.Invoke(nb, argsWithMessageInfo)
+        /// </summary>
+        /// <param name="methodInfo">The method to create the delegate for.</param>
+        /// <returns>A delegate to invoke the method on a specific network behaviour with given message info and arguments.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when passed method info is null.</exception>
+        /// <exception cref="ArgumentException">Thrown when passed method info is not suited for delegate preparation, e.g., static methods.</exception>
         private static RPCDelegate GetRPCDelegate(MethodInfo methodInfo)
         {
-            ParameterExpression args = Expression.Parameter(typeof(object[]), "args");
-            ParameterExpression messageInfo = Expression.Parameter(typeof(MessageInfo), "messageInfo");
-            Expression[] methodArgs = methodInfo.GetParameters()
-                .Select((paramInfo, i) => paramInfo.ParameterType == typeof(MessageInfo)
-                    ? messageInfo as Expression
-                    : Expression.Convert(Expression.ArrayAccess(args, Expression.Constant(i)), paramInfo.ParameterType))
-                .ToArray();
-            ParameterExpression target = Expression.Parameter(typeof(object), "target");
+            if (methodInfo == null) throw new ArgumentNullException(nameof(methodInfo));
             if (methodInfo.DeclaringType == null)
                 throw new ArgumentException($"Cannot prepare rpc delegate for static method {methodInfo.Name}");
-            UnaryExpression convertedTarget = Expression.Convert(target, methodInfo.DeclaringType);
-            MethodCallExpression call = Expression.Call(convertedTarget, methodInfo, methodArgs);
-            Expression<RPCDelegate> lambda = Expression.Lambda<RPCDelegate>(call, target, messageInfo, args);
+
+            ParameterExpression argsExpression = Expression.Parameter(typeof(object[]), "args");
+            ParameterExpression messageInfoExpression = Expression.Parameter(typeof(MessageInfo), "messageInfo");
+
+            var argsIndex = 0;
+            var methodArgumentExpressions = new List<Expression>();
+            foreach (ParameterInfo parameterInfo in methodInfo.GetParameters())
+            {
+                Type paramType = parameterInfo.ParameterType;
+                if (paramType == typeof(MessageInfo)) methodArgumentExpressions.Add(messageInfoExpression);
+                else
+                {
+                    ConstantExpression indexExpression = Expression.Constant(argsIndex++);
+                    IndexExpression arrayAccessExpression = Expression.ArrayAccess(argsExpression, indexExpression);
+                    methodArgumentExpressions.Add(Expression.Convert(arrayAccessExpression, paramType));
+                }
+            }
+
+            ParameterExpression targetExpression = Expression.Parameter(typeof(object), "target");
+            UnaryExpression typedTargetExpression = Expression.Convert(targetExpression, methodInfo.DeclaringType);
+            MethodCallExpression callExpression =
+                Expression.Call(typedTargetExpression, methodInfo, methodArgumentExpressions);
+            Expression<RPCDelegate> lambda =
+                Expression.Lambda<RPCDelegate>(callExpression, targetExpression, messageInfoExpression, argsExpression);
 
             return
                 lambda.Compile(); // (NetBehaviour nb, MessageInfo mi, object[] args) => methodInfo.Invoke(nb, (T[]) args) .

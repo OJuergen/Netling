@@ -42,7 +42,7 @@ namespace Netling
             }
 
             float startTime = Time.time;
-            while (Time.time < startTime + TimeoutMilliseconds / 1000f)
+            while (Time.time < startTime + TimeoutMilliseconds / 1000f && pendingConnections.Count > 0)
             {
                 _networkDriver.ScheduleUpdate().Complete();
                 foreach ((string ipAddress, NetworkConnection connection) in pendingConnections)

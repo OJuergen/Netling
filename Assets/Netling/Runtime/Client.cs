@@ -44,7 +44,6 @@ namespace Netling
         public float RoundTripTime { get; private set; }
         public float Latency { get; private set; }
         private bool _initialized;
-        private NetworkPipeline _unreliablePipeline;
         private NetworkPipeline _reliablePipeline;
 
         public delegate void PingDelegate(float roundTripTime, float latency);
@@ -69,9 +68,6 @@ namespace Netling
             };
             networkSettings.AddRawParameterStruct(ref simulatorParameters);
             _clientDriver = NetworkDriver.Create(networkSettings);
-            _unreliablePipeline = useSimulationPipeline
-                ? _clientDriver.CreatePipeline(typeof(SimulatorPipelineStage))
-                : NetworkPipeline.Null;
             _reliablePipeline = useSimulationPipeline
                 ? _clientDriver.CreatePipeline(typeof(ReliableSequencedPipelineStage), typeof(SimulatorPipelineStage))
                 : _clientDriver.CreatePipeline(typeof(ReliableSequencedPipelineStage));
@@ -317,7 +313,7 @@ namespace Netling
                         }
                         case Commands.NetObjectRPC:
                         {
-                            if (IsHost) break;
+                            // if (IsHost) break;
                             float sentServerTime = streamReader.ReadFloat();
                             int netObjectID = streamReader.ReadInt();
                             if (!NetObjectManager.Instance.Exists(netObjectID))

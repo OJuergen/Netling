@@ -116,20 +116,51 @@ namespace Netling
             return info => _rpcDelegates[index].Invoke(info, arguments);
         }
 
+        /// <summary>
+        /// Creates a delegate from method info (<see cref="MethodInfo"/>).
+        /// The delegate will take as parameters: the message network info (<see cref="MessageInfo"/>)
+        /// and the parameters of the method that are <i>not</i> of type MessageInfo.
+        /// The delegate will invoke the method on this asset using the message info to populate any
+        /// arguments of that type.
+        ///
+        /// (MessageInfo mi, object[] args) => methodInfo.Invoke(this, argsWithMessageInfo)
+        /// </summary>
+        /// <param name="methodInfo">The method to create the delegate for.</param>
+        /// <returns>A delegate to invoke the method on this asset with given message info and arguments.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when passed method info is null.</exception>
+        /// <exception cref="ArgumentException">Thrown when passed method info is not suited for delegate preparation, e.g., static methods.</exception>
         private RPCDelegate GetRPCDelegate(MethodInfo methodInfo)
         {
-            Expression instance = Expression.Constant(this);
-            ParameterExpression args = Expression.Parameter(typeof(object[]), "args");
-            ParameterExpression messageInfo = Expression.Parameter(typeof(MessageInfo), "messageInfo");
-            Expression[] arguments = methodInfo.GetParameters()
-                .Select((paramInfo, i) => paramInfo.ParameterType == typeof(MessageInfo)
-                    ? messageInfo as Expression
-                    : Expression.Convert(Expression.ArrayAccess(args, Expression.Constant(i)), paramInfo.ParameterType))
-                .ToArray();
-            MethodCallExpression call = Expression.Call(instance, methodInfo, arguments);
-            Expression<RPCDelegate> lambda = Expression.Lambda<RPCDelegate>(call, messageInfo, args);
+            if (methodInfo == null) throw new ArgumentNullException(nameof(methodInfo));
+            if (methodInfo.DeclaringType == null)
+                throw new ArgumentException($"Cannot prepare rpc delegate for static method {methodInfo.Name}");
 
-            return lambda.Compile(); // (MessageInfo mi, object[] args) => methodInfo.Invoke(target, args);
+            ParameterExpression argsExpression = Expression.Parameter(typeof(object[]), "args");
+            ParameterExpression messageInfoExpression = Expression.Parameter(typeof(MessageInfo), "messageInfo");
+
+            var argsIndex = 0;
+            var methodArgumentExpressions = new List<Expression>();
+            foreach (ParameterInfo parameterInfo in methodInfo.GetParameters())
+            {
+                Type paramType = parameterInfo.ParameterType;
+                if (paramType == typeof(MessageInfo)) methodArgumentExpressions.Add(messageInfoExpression);
+                else
+                {
+                    ConstantExpression indexExpression = Expression.Constant(argsIndex++);
+                    IndexExpression arrayAccessExpression = Expression.ArrayAccess(argsExpression, indexExpression);
+                    methodArgumentExpressions.Add(Expression.Convert(arrayAccessExpression, paramType));
+                }
+            }
+
+            Expression targetExpression = Expression.Constant(this);
+            MethodCallExpression callExpression =
+                Expression.Call(targetExpression, methodInfo, methodArgumentExpressions);
+            Expression<RPCDelegate> lambda =
+                Expression.Lambda<RPCDelegate>(callExpression, messageInfoExpression, argsExpression);
+
+            return
+                lambda.Compile(); // (MessageInfo mi, object[] args) => methodInfo.Invoke(this, (T[]) args) .
+            // args are cast to respective parameter type or replaced with MessageInfo mi.
         }
 
         public void Serialize(ref DataStreamWriter writer, bool fullLoad)

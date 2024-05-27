@@ -46,24 +46,7 @@ namespace Netling
                                        && mousePos.x > _rect.xMin && mousePos.x < _rect.xMax;
             bool mouseNearEdge = mouseNearRightEdge || mouseNearBottomEdge;
 
-            // Change the cursor if near the edges
-            if (mouseNearEdge && !_isResizingX && !_isResizingY)
-            {
-                if (mouseNearRightEdge && mouseNearBottomEdge)
-                {
-                    Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto); // Change to a resize cursor if available
-                }
-                else if (mouseNearRightEdge)
-                {
-                    Cursor.SetCursor(null, Vector2.zero,
-                        CursorMode.Auto); // Change to a horizontal resize cursor if available
-                }
-                else if (mouseNearBottomEdge)
-                {
-                    Cursor.SetCursor(null, Vector2.zero,
-                        CursorMode.Auto); // Change to a vertical resize cursor if available
-                }
-            }
+            // todo: Change the cursor if near the edges
 
             // Handle mouse events for resizing
             if (Event.current.type == EventType.MouseDown && mouseNearEdge)
