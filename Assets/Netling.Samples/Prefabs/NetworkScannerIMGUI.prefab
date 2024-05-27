@@ -55,3 +55,5 @@ MonoBehaviour:
   _isActive: 1
   _padding: 5
   _port: 9099
+  _batchSize: 10
+  _timeoutMilliSeconds: 100

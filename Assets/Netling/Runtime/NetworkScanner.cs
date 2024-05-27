@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 using Unity.Collections;
 using Unity.Networking.Transport;
 using UnityEngine;
@@ -11,13 +12,12 @@ namespace Netling
 {
     public class NetworkScanner
     {
-        private readonly List<string> _activeServers = new();
         private NetworkDriver _networkDriver;
         public int TimeoutMilliseconds { get; set; } = 100;
 
         public bool IsScanning { get; private set; }
 
-        public async Task<string[]> ScanNetwork(ushort port)
+        public async Task<string[]> ScanLocalNetwork(ushort port, int batchSize = 254)
         {
             if (IsScanning)
             {
@@ -25,18 +25,42 @@ namespace Netling
                 return Array.Empty<string>();
             }
 
-            IsScanning = true;
-            _activeServers.Clear();
-            
+            if (batchSize <= 0)
+            {
+                throw new ArgumentException($"Batch size must be positive, but was {batchSize}");
+            }
+
             string localIP = GetLocalIPAddress();
             string baseIP = localIP[..(localIP.LastIndexOf('.') + 1)];
-            string[] localNetworkIPs = Enumerable.Range(1, 254).Select(id => baseIP + id).ToArray();
-            Dictionary<string, NetworkConnection> pendingConnections = new();
-            if (_networkDriver.IsCreated) _networkDriver.Dispose();
-            _networkDriver = NetworkDriver.Create();
-            _networkDriver.CreatePipeline(typeof(ReliableSequencedPipelineStage));
 
-            foreach (string ipAddress in localNetworkIPs)
+            var activeServerIPs = new List<string>();
+            var startIP = 1;
+            while (startIP <= 255)
+            {
+                int endIP = Mathf.Min(startIP + batchSize - 1, 255);
+                Debug.Log($"Scanning from {startIP} to {endIP}...");
+                string[] ips = Enumerable.Range(startIP, endIP - startIP + 1).Select(id => baseIP + id).ToArray();
+                activeServerIPs.AddRange(await Scan(ips, port));
+                startIP = endIP + 1;
+            }
+
+            return activeServerIPs.ToArray();
+        }
+
+        public async Task<string[]> Scan([NotNull] string[] ips, ushort port)
+        {
+            if (ips == null) throw new ArgumentNullException(nameof(ips));
+
+            IsScanning = true;
+            var activeServerIPs = new List<string>();
+            Dictionary<string, NetworkConnection> pendingConnections = new();
+            if (!_networkDriver.IsCreated)
+            {
+                _networkDriver = NetworkDriver.Create();
+                _networkDriver.CreatePipeline(typeof(ReliableSequencedPipelineStage));
+            }
+
+            foreach (string ipAddress in ips)
             {
                 pendingConnections[ipAddress] = _networkDriver.Connect(NetworkEndpoint.Parse(ipAddress, port));
             }
@@ -53,15 +77,15 @@ namespace Netling
                     {
                         if (eventType == NetworkEvent.Type.Connect)
                         {
-                            _activeServers.Add(ipAddress);
+                            activeServerIPs.Add(ipAddress);
                             connection.Disconnect(_networkDriver);
                         }
                     }
                 }
 
-                foreach (string activeServer in _activeServers)
+                foreach (string activeServerIP in activeServerIPs)
                 {
-                    pendingConnections.Remove(activeServer); // already successfully checked
+                    pendingConnections.Remove(activeServerIP); // already successfully checked
                 }
 
                 await Task.Yield();
@@ -73,7 +97,7 @@ namespace Netling
             }
 
             IsScanning = false;
-            return _activeServers.ToArray();
+            return activeServerIPs.ToArray();
         }
 
         public string GetLocalIPAddress()
