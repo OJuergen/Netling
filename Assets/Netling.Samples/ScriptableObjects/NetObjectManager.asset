@@ -18,24 +18,24 @@ MonoBehaviour:
   - {fileID: 5928809908459067537, guid: 5c8a2dbfd88abe541b4ae2b0e242eabd, type: 3}
   - {fileID: 8277013982151074781, guid: 3df8dde11dbb21f4a8c32c0a3108d2f6, type: 3}
   - {fileID: -7742676964044612033, guid: 3608ca3daecbf40438df66a0b1ce22af, type: 3}
-  _RPCInfo:
-  - Prefab: {fileID: 6894782797894969313, guid: 712011e18a79cd14ab2e99511677c27e,
+  _rpcInfo:
+  - <Prefab>k__BackingField: {fileID: 6894782797894969313, guid: 712011e18a79cd14ab2e99511677c27e,
       type: 3}
-    NetBehaviour: {fileID: 8622028493794728541, guid: 712011e18a79cd14ab2e99511677c27e,
+    <NetBehaviour>k__BackingField: {fileID: 8622028493794728541, guid: 712011e18a79cd14ab2e99511677c27e,
       type: 3}
-    MethodName: SetPositionRPC
-  - Prefab: {fileID: 8277013982151074781, guid: 3df8dde11dbb21f4a8c32c0a3108d2f6,
+    <MethodName>k__BackingField: SetPositionRPC
+  - <Prefab>k__BackingField: {fileID: 8277013982151074781, guid: 3df8dde11dbb21f4a8c32c0a3108d2f6,
       type: 3}
-    NetBehaviour: {fileID: 3586218213730844119, guid: 3df8dde11dbb21f4a8c32c0a3108d2f6,
+    <NetBehaviour>k__BackingField: {fileID: 3586218213730844119, guid: 3df8dde11dbb21f4a8c32c0a3108d2f6,
       type: 3}
-    MethodName: SetPositionRPC
-  - Prefab: {fileID: -7742676964044612033, guid: 3608ca3daecbf40438df66a0b1ce22af,
+    <MethodName>k__BackingField: SetPositionRPC
+  - <Prefab>k__BackingField: {fileID: -7742676964044612033, guid: 3608ca3daecbf40438df66a0b1ce22af,
       type: 3}
-    NetBehaviour: {fileID: -4884554391204536584, guid: 3608ca3daecbf40438df66a0b1ce22af,
+    <NetBehaviour>k__BackingField: {fileID: -4884554391204536584, guid: 3608ca3daecbf40438df66a0b1ce22af,
       type: 3}
-    MethodName: SetPositionRPC
-  - Prefab: {fileID: -7742676964044612033, guid: 3608ca3daecbf40438df66a0b1ce22af,
+    <MethodName>k__BackingField: SetPositionRPC
+  - <Prefab>k__BackingField: {fileID: -7742676964044612033, guid: 3608ca3daecbf40438df66a0b1ce22af,
       type: 3}
-    NetBehaviour: {fileID: 8888730589067183516, guid: 3608ca3daecbf40438df66a0b1ce22af,
+    <NetBehaviour>k__BackingField: {fileID: 8888730589067183516, guid: 3608ca3daecbf40438df66a0b1ce22af,
       type: 3}
-    MethodName: Reload
+    <MethodName>k__BackingField: Reload
