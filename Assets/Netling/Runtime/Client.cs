@@ -313,7 +313,7 @@ namespace Netling
                         }
                         case Commands.NetObjectRPC:
                         {
-                            // if (IsHost) break;
+                            if (IsHost) break;
                             float sentServerTime = streamReader.ReadFloat();
                             int netObjectID = streamReader.ReadInt();
                             if (!NetObjectManager.Instance.Exists(netObjectID))
