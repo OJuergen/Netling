@@ -10,8 +10,7 @@ namespace Netling.Editor
         {
             base.OnInspectorGUI();
             var netBehaviour = (NetBehaviour)target;
-            var netObject = netBehaviour.GetComponentInParent<NetObject>();
-            if (netObject == null)
+            if (netBehaviour.NetObject == null)
             {
                 EditorGUILayout.HelpBox("NetObject component missing. Add a NetObject to this or a parent.",
                     MessageType.Warning);
