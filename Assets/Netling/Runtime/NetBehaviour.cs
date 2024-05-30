@@ -60,7 +60,7 @@ namespace Netling
         /// </summary>
         public NetObject NetObject => _netObject != null
             ? _netObject
-            : _netObject = GetComponentsInParent<NetObject>(true).Single();
+            : _netObject = GetComponentsInParent<NetObject>(true).SingleOrDefault();
 
         /// <summary>
         /// The actor number of the owning client.
@@ -73,7 +73,7 @@ namespace Netling
 
         private void OnValidate()
         {
-            NetObject.AssignIDs();
+            NetObject?.AssignIDs();
         }
 
         /// <summary>

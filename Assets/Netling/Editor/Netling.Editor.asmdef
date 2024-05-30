@@ -1,12 +1,14 @@
 {
-    "name": "Netling",
-    "rootNamespace": "Netling",
+    "name": "Netling.Editor",
+    "rootNamespace": "Netling.Editor",
     "references": [
-        "GUID:f2d49d9fa7e7eb3418e39723a7d3b92f",
-        "GUID:e0cd26848372d4e5c891c569017e11f1",
-        "GUID:1b6b778c06516f34ebcf355063a3066d"
+        "GUID:95bff287bccaff940aa7eedfe374aa0d",
+        "GUID:1b6b778c06516f34ebcf355063a3066d",
+        "GUID:978dbcac1238631448637c9a755290ca"
     ],
-    "includePlatforms": [],
+    "includePlatforms": [
+        "Editor"
+    ],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,
