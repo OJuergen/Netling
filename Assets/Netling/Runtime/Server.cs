@@ -452,8 +452,8 @@ namespace Netling
                         objectWriter.WriteInt(netObject.ID);
                         objectWriter.WriteUShort(netObject.PrefabIndex);
                         objectWriter.WriteInt(netObject.OwnerActorNumber);
-                        objectWriter.WriteVector3(netObject.transform.position);
-                        objectWriter.WriteQuaternion(netObject.transform.rotation);
+                        objectWriter.WriteVector3(netObject.transform.localPosition);
+                        objectWriter.WriteQuaternion(netObject.transform.localRotation);
                         objectWriter.WriteInt(netObject.gameObject.scene.buildIndex);
                         Transform parent = netObject.transform.parent;
                         objectWriter.WriteManagedString(parent == null ? "/" : parent.GetFullPath());
@@ -474,6 +474,20 @@ namespace Netling
             }
         }
 
+        /// <summary>
+        /// Spawn a new networked object with a specific network behaviour component on the server.
+        /// Sends a spawn message to all clients.
+        /// Returns the component of the newly created network object.
+        /// </summary>
+        /// <param name="netBehaviourPrefab">The prefab to instantiate</param>
+        /// <param name="scene">The scene where the object will be moved to. Ignored if parent is set.</param>
+        /// <param name="parent">The parent transform this object will be a child of. Null for root objects.</param>
+        /// <param name="position">The global position where to instantiate the object.</param>
+        /// <param name="rotation">The global rotation with which to instantiate the object.</param>
+        /// <param name="actorNumber">The actor number of the owner of this object.</param>
+        /// <typeparam name="T">The type of the net behaviour component of the new object that is returned.</typeparam>
+        /// <returns>The net behaviour component of the newly instantiated network object.</returns>
+        /// <exception cref="InvalidOperationException">Thrown if server not running.</exception>
         public T SpawnNetObject<T>(T netBehaviourPrefab, Scene scene, Transform parent, Vector3 position,
             Quaternion rotation, int actorNumber = ServerActorNumber) where T : NetBehaviour
         {
@@ -481,6 +495,19 @@ namespace Netling
                 .GetComponent<T>();
         }
 
+        /// <summary>
+        /// Spawn a new networked object on the server.
+        /// Sends a spawn message to all clients.
+        /// Returns the newly created network object.
+        /// </summary>
+        /// <param name="netObjectPrefab"></param>
+        /// <param name="scene">The scene where the object will be moved to. Ignored if parent is set.</param>
+        /// <param name="parent">The parent transform this object will be a child of. Null for root objects.</param>
+        /// <param name="position">The global position where to instantiate the object.</param>
+        /// <param name="rotation">The global rotation with which to instantiate the object.</param>
+        /// <param name="actorNumber">The actor number of the owner of this object.</param>
+        /// <returns></returns>
+        /// <exception cref="InvalidOperationException">Thrown if server not running.</exception>
         public NetObject SpawnNetObject(NetObject netObjectPrefab, Scene scene, Transform parent, Vector3 position,
             Quaternion rotation, int actorNumber = ServerActorNumber)
         {

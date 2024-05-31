@@ -196,6 +196,12 @@ namespace Netling
                                 if (scene != null && scene.isLoaded)
                                 {
                                     Transform parent = GameObject.Find(parentPath)?.transform;
+                                    if (parent != null)
+                                    {
+                                        // if parent is set, server sends local values
+                                        position = parent.InverseTransformPoint(position);
+                                        rotation = parent.rotation * rotation;
+                                    }
                                     NetObject netObject = NetObjectManager.Instance.SpawnOnClient(netObjID, prefabIndex,
                                         scene, parent, position, rotation, ownerActorNumber);
                                     if (netObject != null)
