@@ -199,7 +199,7 @@ namespace Netling
                                     if (parent != null)
                                     {
                                         // if parent is set, server sends local values
-                                        position = parent.InverseTransformPoint(position);
+                                        position = parent.TransformPoint(position);
                                         rotation = parent.rotation * rotation;
                                     }
                                     NetObject netObject = NetObjectManager.Instance.SpawnOnClient(netObjID, prefabIndex,
