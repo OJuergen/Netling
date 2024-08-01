@@ -53,6 +53,7 @@ namespace Netling
 
         public delegate void PlayerDataDelegate(int actorNumber, string playerData);
 
+        public event Action Started;
         public event Action Stopped;
         public event ConnectionDelegate ClientConnected;
         public event ConnectionDelegate ClientDisconnected;
@@ -70,7 +71,7 @@ namespace Netling
             _initialized = true;
         }
 
-        public void Start()
+        public void Start(bool quitOnFail = false)
         {
             var networkSettings = new NetworkSettings();
             var simulationParameters = new SimulatorUtility.Parameters
@@ -82,10 +83,10 @@ namespace Netling
             };
             networkSettings.AddRawParameterStruct(ref simulationParameters);
             var serverDriver = NetworkDriver.Create(networkSettings);
-            Start(serverDriver);
+            Start(serverDriver, quitOnFail);
         }
 
-        public void Start(NetworkDriver serverDriver)
+        public void Start(NetworkDriver serverDriver, bool quitOnFail = false)
         {
             if (IsActive)
             {
@@ -116,6 +117,7 @@ namespace Netling
                 _serverDriver.Listen();
                 State = ServerState.Started;
                 Debug.Log($"Started server on port {_endPoint.Port}");
+                Started?.Invoke();
                 break;
             }
 
@@ -126,7 +128,7 @@ namespace Netling
                 _actorNumberByConnection.Clear();
                 _connectionByActorNumber.Clear();
                 _lastPingTimes.Clear();
-                Application.Quit(-1);
+                if(quitOnFail) Application.Quit(-1);
                 throw new NetException("Failed to bind to any port");
             }
         }
