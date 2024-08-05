@@ -19,7 +19,7 @@ namespace Netling.Samples
 
             if (_subScene.Scene.isLoaded && GUILayout.Button("Unload Network Test Sub Scene"))
             {
-                SceneManager.UnloadSceneAsync(_subScene);
+                SceneManager.UnloadSceneAsync(_subScene.Scene);
             }
 
             if (Server.IsActive && _subScene.Scene.isLoaded && GUILayout.Button("Spawn NetObject"))
