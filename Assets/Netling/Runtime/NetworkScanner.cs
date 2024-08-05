@@ -16,13 +16,13 @@ namespace Netling
         public int TimeoutMilliseconds { get; set; } = 100;
 
         public bool IsScanning { get; private set; }
+        public event Action<bool> ScanStateChanged;
 
         public async Task<string[]> ScanLocalNetwork(ushort port, int batchSize = 254)
         {
             if (IsScanning)
             {
-                Debug.LogError($"Cannot start scan: already scanning. Wait until finished.");
-                return Array.Empty<string>();
+                throw new InvalidOperationException("Cannot initiate scan: already scanning.");
             }
 
             if (batchSize <= 0)
@@ -52,6 +52,7 @@ namespace Netling
             if (ips == null) throw new ArgumentNullException(nameof(ips));
 
             IsScanning = true;
+            ScanStateChanged?.Invoke(IsScanning);
             var activeServerIPs = new List<string>();
             Dictionary<string, NetworkConnection> pendingConnections = new();
             if (!_networkDriver.IsCreated)
@@ -97,6 +98,7 @@ namespace Netling
             }
 
             IsScanning = false;
+            ScanStateChanged?.Invoke(IsScanning);
             return activeServerIPs.ToArray();
         }
 
