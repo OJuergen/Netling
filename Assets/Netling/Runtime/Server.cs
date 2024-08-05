@@ -13,6 +13,9 @@ namespace Netling
 {
     public class Server : IDisposable
     {
+        private static Server _instance;
+        public static Server Instance => _instance ??= new Server();
+        
         private enum ServerState
         {
             Stopped,
@@ -23,8 +26,6 @@ namespace Netling
         public const int ServerActorNumber = -1;
         private const int MaxBytesPerMessage = 1300; // 1400 causes errors on receiving side
 
-        private static Server _instance;
-        public static Server Instance => _instance ??= new Server();
         private ServerState State { get; set; }
 
         public static float Time =>
@@ -278,7 +279,7 @@ namespace Netling
                             // ignore illegal updates and those from local host client
                             if (netObject == null
                                 || netObject.OwnerActorNumber != senderActorNumber // cheater?
-                                || Client.IsHost && Client.Instance.ActorNumber == senderActorNumber)
+                                || Client.Instance.IsHost && Client.Instance.ActorNumber == senderActorNumber)
                             {
                                 streamReader.DiscardBytes(size);
                             }

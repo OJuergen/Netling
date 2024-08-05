@@ -21,14 +21,13 @@ namespace Netling
 
         private static Client _instance;
         public static Client Instance => _instance ??= new Client();
-        public static bool IsConnected => Instance.State == ClientState.Connected;
+        public bool IsConnected => Instance.State == ClientState.Connected;
         public ClientState State { get; private set; } = ClientState.Disconnected;
-        public static bool IsHost => Server.IsActive && IsConnected;
+        public bool IsHost => Server.IsActive && IsConnected;
         public bool UseLocalhost { get; set; }
 
         public int ActorNumber { get; private set; } = -2;
-        public event Action Connected;
-        public event Action Disconnected;
+        public event Action<ClientState> StateChanged;
 
         private ushort _port;
         private string _ip;
@@ -48,9 +47,9 @@ namespace Netling
 
         public delegate void PingDelegate(float roundTripTime, float latency);
 
-        public static event PingDelegate PingReceived;
-        public static event Action<int> DataReceived;
-        public static event Action<int> DataSent;
+        public event PingDelegate PingReceived;
+        public event Action<int> DataReceived;
+        public event Action<int> DataSent;
 
         public void Init(string ip, ushort port, bool useLocalhost, float timeout, bool useSimulationPipeline)
         {
@@ -97,12 +96,13 @@ namespace Netling
             }
 
             Debug.Log("Connecting...");
-            State = ClientState.Connecting;
             NetworkEndpoint endpoint = string.IsNullOrEmpty(_ip) || UseLocalhost
                 ? NetworkEndpoint.LoopbackIpv4
                 : NetworkEndpoint.Parse(_ip, _port);
             endpoint.Port = _port;
             _clientToServerConnection = _clientDriver.Connect(endpoint);
+            State = ClientState.Connecting;
+            StateChanged?.Invoke(State);
         }
 
         public void Tick()
@@ -126,7 +126,7 @@ namespace Netling
                 {
                     Debug.Log("Connected!");
                     State = ClientState.Connected;
-                    Connected?.Invoke();
+                    StateChanged?.Invoke(State);
                 }
                 else if (eventType == NetworkEvent.Type.Data)
                 {
@@ -347,9 +347,9 @@ namespace Netling
                 {
                     Debug.Log("Disconnected!");
                     SceneManager.sceneLoaded -= OnSceneLoaded;
-                    Disconnected?.Invoke();
-                    State = ClientState.Disconnected;
                     _clientToServerConnection = default;
+                    State = ClientState.Disconnected;
+                    StateChanged?.Invoke(State);
                 }
             }
         }
@@ -527,11 +527,11 @@ namespace Netling
             {
                 _clientDriver.Disconnect(_clientToServerConnection);
                 SceneManager.sceneLoaded -= OnSceneLoaded;
-                Disconnected?.Invoke();
             }
 
-            State = ClientState.Disconnected;
             _clientToServerConnection = default;
+            State = ClientState.Disconnected;
+            StateChanged?.Invoke(State);
             Debug.Log("Disconnected");
         }
 
@@ -540,6 +540,7 @@ namespace Netling
         {
             ActorNumber = actorNumber;
             State = ClientState.Debug;
+            StateChanged?.Invoke(State);
         }
 #endif
 
@@ -547,6 +548,7 @@ namespace Netling
         {
             if (_clientDriver.IsCreated) _clientDriver.Dispose();
             State = ClientState.Disconnected;
+            StateChanged?.Invoke(State);
         }
     }
 }

@@ -112,7 +112,7 @@ namespace Netling
             _objectsById.Clear();
             _objectCount = 0;
             _nextId = 0;
-            Client.Instance.Disconnected += OnDisconnectedFromServer;
+            Client.Instance.StateChanged += OnClientStateChanged;
             Server.Instance.ClientDisconnected += OnClientDisconnected;
             PrepareRPCDelegates();
 #if UNITY_EDITOR
@@ -124,7 +124,7 @@ namespace Netling
         private new void OnDisable()
         {
             base.OnDisable();
-            Client.Instance.Disconnected -= OnDisconnectedFromServer;
+            Client.Instance.StateChanged -= OnClientStateChanged;
             Server.Instance.ClientDisconnected -= OnClientDisconnected;
 #if UNITY_EDITOR
             AssetPostProcessor.ImportedPrefab -= OnImportedPrefab;
@@ -257,14 +257,17 @@ namespace Netling
                 .ToArray());
         }
 
-        private void OnDisconnectedFromServer()
+        private void OnClientStateChanged(Client.ClientState clientState)
         {
-            if (Server.IsActive)
-                return; // keep hosting
-
-            foreach (NetObject netObject in NetObjects)
+            if(clientState == Client.ClientState.Disconnected)
             {
-                Unspawn(netObject.ID);
+                if (Server.IsActive)
+                    return; // keep hosting
+
+                foreach (NetObject netObject in NetObjects)
+                {
+                    Unspawn(netObject.ID);
+                }
             }
         }
 

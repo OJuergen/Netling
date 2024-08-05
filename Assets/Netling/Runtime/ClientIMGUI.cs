@@ -15,8 +15,8 @@ namespace Netling
 
         private void OnEnable()
         {
-            Client.DataReceived += OnReceivedData;
-            Client.DataSent += OnSentData;
+            Client.Instance.DataReceived += OnReceivedData;
+            Client.Instance.DataSent += OnSentData;
         }
 
         private void OnSentData(int bytes)
@@ -49,8 +49,8 @@ namespace Netling
 
         private void OnDisable()
         {
-            Client.DataReceived -= OnReceivedData;
-            Client.DataSent -= OnSentData;
+            Client.Instance.DataReceived -= OnReceivedData;
+            Client.Instance.DataSent -= OnSentData;
         }
 
         private void Update()

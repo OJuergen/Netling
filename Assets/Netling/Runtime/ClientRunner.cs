@@ -26,7 +26,7 @@ namespace Netling
 
         private void OnDestroy()
         {
-            if (Client.IsConnected) Client.Instance.Disconnect();
+            if (Client.Instance.IsConnected) Client.Instance.Disconnect();
             Client.Instance.Dispose();
         }
 
@@ -34,12 +34,12 @@ namespace Netling
         {
             float time = Time.time;
             Client.Instance.Tick();
-            if (Client.IsConnected && time > _lastNetObjectUpdateTime + 1 / _netObjectUpdateRate)
+            if (Client.Instance.IsConnected && time > _lastNetObjectUpdateTime + 1 / _netObjectUpdateRate)
             {
                 _lastNetObjectUpdateTime = time;
                 Client.Instance.SendBatchedNetObjectsUpdate();
             }
-            if (Client.IsConnected && time > _lastPingTime + 1 / _pingRate)
+            if (Client.Instance.IsConnected && time > _lastPingTime + 1 / _pingRate)
             {
                 _lastPingTime = time;
                 Client.Instance.SendPing();
@@ -54,7 +54,7 @@ namespace Netling
 
         private void OnApplicationQuit()
         {
-            if (Client.IsConnected) Client.Instance.Disconnect();
+            if (Client.Instance.IsConnected) Client.Instance.Disconnect();
         }
     }
 }

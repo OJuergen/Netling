@@ -42,7 +42,10 @@ namespace Netling
         protected void Trigger(T parameters)
         {
             if (Server.IsActive)
-                TriggerOnServer(parameters, Client.IsHost ? Client.Instance.ActorNumber : Server.ServerActorNumber);
+            {
+                int actorNumber = Client.Instance.IsHost ? Client.Instance.ActorNumber : Server.ServerActorNumber;
+                TriggerOnServer(parameters, actorNumber);
+            }
             else
                 TriggerOnClient(parameters);
         }
@@ -73,7 +76,7 @@ namespace Netling
             {
                 if (Optimistic) Execute(parameters, Client.Instance.ActorNumber, Server.Time);
 
-                if (Client.IsConnected) Client.Instance.SendGameAction(this, parameters);
+                if (Client.Instance.IsConnected) Client.Instance.SendGameAction(this, parameters);
                 else Debug.LogWarning("Cannot trigger game action: client not connected");
             }
             else Deny(parameters, Client.Instance.ActorNumber, Server.Time);
@@ -114,7 +117,7 @@ namespace Netling
             // todo maybe kick sender, if sender not actor or trigger time in the future?
             if (valid && senderActorNumber == actorNumber && triggerTime <= Server.Time)
             {
-                if (!Client.IsConnected || Client.Instance.ActorNumber != senderActorNumber || !Optimistic)
+                if (!Client.Instance.IsConnected || Client.Instance.ActorNumber != senderActorNumber || !Optimistic)
                     Execute(tParameter, actorNumber, triggerTime);
                 Server.Instance.SendGameAction(this, parameters, actorNumber, triggerTime);
             }

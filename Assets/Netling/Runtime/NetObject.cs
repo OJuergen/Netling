@@ -69,7 +69,7 @@ namespace Netling
         private void OnDestroy()
         {
             if (Server.IsActive && IsInitialized) Server.Instance.UnspawnNetObject(this);
-            if(Client.IsConnected && IsInitialized) NetObjectManager.Instance.Unspawn(ID);
+            if(Client.Instance.IsConnected && IsInitialized) NetObjectManager.Instance.Unspawn(ID);
         }
 
         public void SetDirty()

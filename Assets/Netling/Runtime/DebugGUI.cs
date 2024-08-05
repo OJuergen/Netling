@@ -9,12 +9,12 @@ namespace Netling
 
         private void OnEnable()
         {
-            Client.PingReceived += OnPingReceived;
+            Client.Instance.PingReceived += OnPingReceived;
         }
 
         private void OnDisable()
         {
-            Client.PingReceived -= OnPingReceived;
+            Client.Instance.PingReceived -= OnPingReceived;
         }
 
         private void OnPingReceived(float roundTripTime, float latency)
