@@ -16,7 +16,9 @@ namespace Netling
         public int TimeoutMilliseconds { get; set; } = 100;
 
         public bool IsScanning { get; private set; }
+        public float Progress { get; private set; }
         public event Action<bool> ScanStateChanged;
+        public event Action<float> ProgressChanged;
 
         public async Task<string[]> ScanLocalNetwork(ushort port, int batchSize = 254)
         {
@@ -33,15 +35,19 @@ namespace Netling
             string localIP = GetLocalIPAddress();
             string baseIP = localIP[..(localIP.LastIndexOf('.') + 1)];
 
+            Progress = 0;
+            ProgressChanged?.Invoke(Progress);
+
             var activeServerIPs = new List<string>();
             var startIP = 1;
             while (startIP <= 255)
             {
                 int endIP = Mathf.Min(startIP + batchSize - 1, 255);
-                Debug.Log($"Scanning from {startIP} to {endIP}...");
                 string[] ips = Enumerable.Range(startIP, endIP - startIP + 1).Select(id => baseIP + id).ToArray();
                 activeServerIPs.AddRange(await Scan(ips, port));
                 startIP = endIP + 1;
+                Progress = endIP / 255f;
+                ProgressChanged?.Invoke(Progress);
             }
 
             return activeServerIPs.ToArray();
