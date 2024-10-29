@@ -1,4 +1,5 @@
 using System;
+using System.Net;
 using Unity.Collections;
 using Unity.Networking.Transport;
 using Unity.Networking.Transport.Utilities;
@@ -79,6 +80,14 @@ namespace Netling
             _port = port;
             UseLocalhost = useLocalhost;
         }
+
+        public void BroadcastConnect(ushort port)
+        {
+            SetEndpoint(IPAddress.Broadcast.ToString(), port, false);
+            Connect();
+        }
+
+        public void BroadcastConnect() => BroadcastConnect(_port);
 
         public void Connect()
         {
@@ -202,6 +211,7 @@ namespace Netling
                                         position = parent.TransformPoint(position);
                                         rotation = parent.rotation * rotation;
                                     }
+
                                     NetObject netObject = NetObjectManager.Instance.SpawnOnClient(netObjID, prefabIndex,
                                         scene, parent, position, rotation, ownerActorNumber);
                                     if (netObject != null)
