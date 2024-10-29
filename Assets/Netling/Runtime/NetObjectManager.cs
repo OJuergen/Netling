@@ -162,7 +162,6 @@ namespace Netling
                 .OrderBy(p => p.name)
                 .ToList();
             CollectRPCInfo();
-            Debug.Log($"FindPrefabs {_netObjectPrefabs.Count} prefabs");
         }
 #endif
 
