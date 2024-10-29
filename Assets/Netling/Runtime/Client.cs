@@ -110,7 +110,7 @@ namespace Netling
             if (!_clientDriver.IsCreated) return;
             _clientDriver.ScheduleUpdate().Complete();
 
-            if (_timeout > 0 && IsConnected && Time.time - LastPongTime > _timeout)
+            if (_timeout > 0 && State != ClientState.Disconnected && Time.time - LastPongTime > _timeout)
             {
                 Debug.LogWarning("Disconnected due to timeout");
                 Disconnect();
