@@ -154,6 +154,7 @@ namespace Netling
                 networkConnection.Disconnect(_serverDriver);
             }
 
+            _serverDriver.ScheduleUpdate().Complete(); // send disconnection events
             _actorNumberByConnection.Clear();
             _connectionByActorNumber.Clear();
             if (_serverDriver.IsCreated) _serverDriver.Dispose();
