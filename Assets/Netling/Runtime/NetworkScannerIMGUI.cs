@@ -20,6 +20,11 @@ namespace Netling
             {
                 ScanNetwork();
             }
+
+            if (GUILayout.Button("Connect via Broadcast"))
+            {
+                _networkScanner.BroadcastConnect(_port);
+            }
         }
 
         private async void ScanNetwork()

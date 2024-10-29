@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.NetworkInformation;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
@@ -19,6 +20,12 @@ namespace Netling
         public float Progress { get; private set; }
         public event Action<bool> ScanStateChanged;
         public event Action<float> ProgressChanged;
+
+        public void BroadcastConnect(ushort port)
+        {
+            Client.Instance.SetEndpoint(IPAddress.Broadcast.ToString(), port, false);
+            Client.Instance.Connect();
+        }
 
         public async Task<string[]> ScanLocalNetwork(ushort port, int batchSize = 254)
         {
