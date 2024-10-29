@@ -15,23 +15,14 @@ namespace Netling
     {
         private static Server _instance;
         public static Server Instance => _instance ??= new Server();
-        
-        private enum ServerState
-        {
-            Stopped,
-            Started,
-            Debug
-        }
 
         public const int ServerActorNumber = -1;
         private const int MaxBytesPerMessage = 1300; // 1400 causes errors on receiving side
 
-        private ServerState State { get; set; }
-
         public static float Time =>
             IsActive ? UnityEngine.Time.time : Client.Instance.EstimateServerTime();
 
-        public static bool IsActive => Instance.State is ServerState.Started or ServerState.Debug;
+        public static bool IsActive { get; private set; }
         public ushort Port => _endPoint.Port;
         private bool _initialized;
         private NetworkDriver _serverDriver;
@@ -116,13 +107,13 @@ namespace Netling
                 _endPoint.Port = port;
                 if (_serverDriver.Bind(_endPoint) != 0) continue;
                 _serverDriver.Listen();
-                State = ServerState.Started;
+                IsActive = true;
                 Debug.Log($"Started server on port {_endPoint.Port}");
                 Started?.Invoke();
                 break;
             }
 
-            if (State != ServerState.Started)
+            if (!IsActive)
             {
                 _connections.Dispose();
                 _serverDriver.Dispose();
@@ -137,11 +128,6 @@ namespace Netling
         public static void AssertActive()
         {
             if (!IsActive) throw new InvalidOperationException("Assertion failed: Server not active");
-        }
-
-        public void StartDebugMode()
-        {
-            State = ServerState.Debug;
         }
 
         public void Stop()
@@ -159,7 +145,7 @@ namespace Netling
             _connectionByActorNumber.Clear();
             if (_serverDriver.IsCreated) _serverDriver.Dispose();
             if (_connections.IsCreated) _connections.Dispose();
-            State = ServerState.Stopped;
+            IsActive = false;
             Stopped?.Invoke();
         }
 
@@ -366,8 +352,7 @@ namespace Netling
 
         public void AcceptPlayer(int actorNumber)
         {
-            if (State == ServerState.Debug) return;
-            if (State != ServerState.Started)
+            if (!IsActive)
                 throw new InvalidOperationException("Cannot accept player: Server not running");
 
             NetworkConnection connection = _connectionByActorNumber[actorNumber];
@@ -383,8 +368,7 @@ namespace Netling
 
         public void Kick(int actorNumber)
         {
-            if (State == ServerState.Debug) return;
-            if (State != ServerState.Started)
+            if (!IsActive)
                 throw new InvalidOperationException("Cannot kick player: Server not running");
 
             if (_connectionByActorNumber.TryGetValue(actorNumber, out NetworkConnection connection))
@@ -404,8 +388,7 @@ namespace Netling
 
         public void KickAll()
         {
-            if (State == ServerState.Debug) return;
-            if (State != ServerState.Started)
+            if (!IsActive)
                 throw new InvalidOperationException("Cannot kick player: Server not running");
 
             foreach (NetworkConnection connection in _connections)
@@ -515,13 +498,13 @@ namespace Netling
         public NetObject SpawnNetObject(NetObject netObjectPrefab, Scene scene, Transform parent, Vector3 position,
             Quaternion rotation, int actorNumber = ServerActorNumber)
         {
-            if (State != ServerState.Started && State != ServerState.Debug)
+            if (!IsActive)
                 throw new InvalidOperationException("Cannot spawn NetObject: Server not running");
 
             NetObject netObject =
                 NetObjectManager.Instance.SpawnOnServer(netObjectPrefab, position, rotation, scene, parent,
                     actorNumber);
-            if (State == ServerState.Started) SendSpawnMessage(new[] { netObject }, _connections);
+            SendSpawnMessage(new[] { netObject }, _connections);
             return netObject;
         }
 
@@ -532,8 +515,7 @@ namespace Netling
 
         private void SendNetAssetUpdate(bool fullLoad, NativeList<NetworkConnection> connections)
         {
-            if (State == ServerState.Debug) return;
-            if (State != ServerState.Started)
+            if (!IsActive)
                 throw new InvalidOperationException("Cannot send NetAsset update: Server not running");
             Profiler.BeginSample("NetAsset Update");
 
@@ -595,8 +577,7 @@ namespace Netling
 
         public void SendNetObjectsUpdate()
         {
-            if (State == ServerState.Debug) return;
-            if (State != ServerState.Started)
+            if (!IsActive)
                 throw new InvalidOperationException("Cannot set NetObject update: Server not running");
 
             Profiler.BeginSample("NetObject Update");
@@ -662,14 +643,13 @@ namespace Netling
 
         public void UnspawnNetObjects(NetObject[] netObjects)
         {
-            if (State != ServerState.Started && State != ServerState.Debug)
+            if (!IsActive)
                 throw new InvalidOperationException("Cannot unspawn NetObjects: Server not running");
             foreach (NetObject netObject in netObjects)
             {
                 NetObjectManager.Instance.Unspawn(netObject.ID);
             }
 
-            if (State == ServerState.Debug) return;
             int size = 8 // header
                        + netObjects.Length * 4; // payload
             var streamWriter = new DataStreamWriter(size, Allocator.Temp);
@@ -688,8 +668,7 @@ namespace Netling
         public void SendGameAction(GameAction gameAction, GameAction.IParameters parameters, int actorNumber,
             float triggerTime)
         {
-            if (State == ServerState.Debug) return;
-            if (State != ServerState.Started)
+            if (!IsActive)
                 throw new InvalidOperationException($"Cannot send {gameAction}: Server not running");
 
             var streamWriter = new DataStreamWriter(MaxBytesPerMessage, Allocator.Temp);
@@ -706,8 +685,7 @@ namespace Netling
         public void DenyGameAction(GameAction gameAction, GameAction.IParameters parameters, int actorNumber,
             float triggerTime)
         {
-            if (State == ServerState.Debug) return;
-            if (State != ServerState.Started)
+            if (!IsActive)
                 throw new InvalidOperationException($"Cannot deny {gameAction}: Server not running");
 
             var streamWriter = new DataStreamWriter(MaxBytesPerMessage, Allocator.Temp);
@@ -723,8 +701,7 @@ namespace Netling
 
         public void SendRPC(NetAsset netAsset, string methodName, object[] args)
         {
-            if (State == ServerState.Debug) return;
-            if (State != ServerState.Started)
+            if (!IsActive)
                 throw new InvalidOperationException($"Cannot send rpc {methodName}: Server not running");
 
             var streamWriter = new DataStreamWriter(MaxBytesPerMessage, Allocator.Temp);
@@ -738,8 +715,7 @@ namespace Netling
 
         public void SendRPC(NetBehaviour netBehaviour, string methodName, object[] args)
         {
-            if (State == ServerState.Debug) return;
-            if (State != ServerState.Started)
+            if (!IsActive)
                 throw new InvalidOperationException($"Cannot send rpc {methodName}: Server not running");
 
             var streamWriter = new DataStreamWriter(MaxBytesPerMessage, Allocator.Temp);

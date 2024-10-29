@@ -14,8 +14,7 @@ namespace Netling
         {
             Disconnected,
             Connecting,
-            Connected,
-            Debug
+            Connected
         }
 
         private const int MaxBytesPerMessage = 1300; // 1400 causes errors on receiving side
@@ -375,7 +374,6 @@ namespace Netling
 
         public void SendPlayerData(string playerData)
         {
-            if (State == ClientState.Debug) return;
             if (State != ClientState.Connected)
                 throw new InvalidOperationException("Cannot send player data: client not connected");
 
@@ -388,7 +386,6 @@ namespace Netling
 
         public void SendBatchedNetObjectsUpdate()
         {
-            if (State == ClientState.Debug) return;
             if (State != ClientState.Connected)
             {
                 Debug.LogWarning($"Cannot send messages in client state {State}");
@@ -459,7 +456,6 @@ namespace Netling
 
         public void SendPing()
         {
-            if (State == ClientState.Debug) return;
             if (State != ClientState.Connected)
             {
                 Debug.LogWarning($"Cannot send messages in client state {State}");
@@ -480,7 +476,6 @@ namespace Netling
 
         public void SendGameAction(GameAction gameAction, GameAction.IParameters parameters)
         {
-            if (State == ClientState.Debug) return;
             if (State != ClientState.Connected)
                 throw new InvalidOperationException($"Cannot send game action {gameAction}: not connected");
 
@@ -496,7 +491,6 @@ namespace Netling
 
         public void SendRPC(NetAsset netAsset, string methodName, object[] args)
         {
-            if (State == ClientState.Debug) return;
             if (State != ClientState.Connected)
                 throw new InvalidOperationException($"Cannot send rpc {methodName}: not connected");
 
@@ -511,7 +505,6 @@ namespace Netling
 
         public void SendRPC(NetBehaviour netBehaviour, string methodName, object[] args)
         {
-            if (State == ClientState.Debug) return;
             if (State != ClientState.Connected)
                 throw new InvalidOperationException($"Cannot send rpc {methodName}: not connected");
 
@@ -544,15 +537,6 @@ namespace Netling
             StateChanged?.Invoke(State);
             Debug.Log("Disconnected");
         }
-
-#if UNITY_EDITOR
-        public void StartDebugMode(int actorNumber)
-        {
-            ActorNumber = actorNumber;
-            State = ClientState.Debug;
-            StateChanged?.Invoke(State);
-        }
-#endif
 
         public void Dispose()
         {
