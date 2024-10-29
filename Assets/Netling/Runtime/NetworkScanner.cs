@@ -20,6 +20,7 @@ namespace Netling
         public float Progress { get; private set; }
         public event Action<bool> ScanStateChanged;
         public event Action<float> ProgressChanged;
+        private const string LocalBaseIP = "192.168.0.";
 
         public void BroadcastConnect(ushort port)
         {
@@ -39,9 +40,6 @@ namespace Netling
                 throw new ArgumentException($"Batch size must be positive, but was {batchSize}");
             }
 
-            string localIP = GetLocalIPAddress();
-            string baseIP = localIP[..(localIP.LastIndexOf('.') + 1)];
-
             Progress = 0;
             ProgressChanged?.Invoke(Progress);
 
@@ -50,7 +48,7 @@ namespace Netling
             while (startIP <= 255)
             {
                 int endIP = Mathf.Min(startIP + batchSize - 1, 255);
-                string[] ips = Enumerable.Range(startIP, endIP - startIP + 1).Select(id => baseIP + id).ToArray();
+                string[] ips = Enumerable.Range(startIP, endIP - startIP + 1).Select(id => LocalBaseIP + id).ToArray();
                 activeServerIPs.AddRange(await Scan(ips, port));
                 startIP = endIP + 1;
                 Progress = endIP / 255f;
