@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using MufflonUtil;
 using Unity.Collections;
 using Unity.Networking.Transport;
@@ -40,6 +41,8 @@ namespace Netling
         private bool _acceptAllActors;
         private bool _useSimulationPipeline;
         private ushort[] _ports;
+        private readonly HashSet<int> _acceptedActors = new();
+        public int[] AcceptedActors => _acceptedActors.ToArray();
 
         public delegate void ConnectionDelegate(int actorNumber);
 
@@ -182,10 +185,11 @@ namespace Netling
                 {
                     connection.Disconnect(_serverDriver);
                     Debug.LogWarning($"Disconnecting client {actorNumber} due to timeout");
-                    ClientDisconnected?.Invoke(actorNumber);
                     _connections.RemoveAtSwapBack(i);
                     _actorNumberByConnection.Remove(connection);
                     _connectionByActorNumber.Remove(actorNumber);
+                    _acceptedActors.Remove(actorNumber);
+                    ClientDisconnected?.Invoke(actorNumber);
                     continue;
                 }
 
@@ -201,10 +205,11 @@ namespace Netling
                     else if (eventType == NetworkEvent.Type.Disconnect)
                     {
                         Debug.Log($"Client {actorNumber} disconnected");
-                        ClientDisconnected?.Invoke(actorNumber);
                         _connections.RemoveAtSwapBack(i);
                         _actorNumberByConnection.Remove(connection);
                         _connectionByActorNumber.Remove(actorNumber);
+                        _acceptedActors.Remove(actorNumber);
+                        ClientDisconnected?.Invoke(actorNumber);
                         if (i >= _connections.Length)
                             break;
                     }
@@ -353,6 +358,7 @@ namespace Netling
             _serverDriver.EndSend(writer);
             SendNetAssetUpdate(true, connections);
             connections.Dispose();
+            _acceptedActors.Add(actorNumber);
             ActorAccepted?.Invoke(actorNumber);
         }
 
@@ -364,11 +370,12 @@ namespace Netling
             if (_connectionByActorNumber.TryGetValue(actorNumber, out NetworkConnection connection))
             {
                 Debug.Log($"Kicking client {actorNumber}");
-                ClientDisconnected?.Invoke(actorNumber);
                 connection.Disconnect(_serverDriver);
                 _connections.RemoveAtSwapBack(_connections.IndexOf(connection));
                 _connectionByActorNumber.Remove(actorNumber);
                 _actorNumberByConnection.Remove(connection);
+                _acceptedActors.Remove(actorNumber);
+                ClientDisconnected?.Invoke(actorNumber);
             }
             else
             {
@@ -381,16 +388,22 @@ namespace Netling
             if (!IsActive)
                 throw new InvalidOperationException("Cannot kick client: Server not running");
 
+            int[] clientActorNumbers = _actorNumberByConnection.Values.ToArray();
             foreach (NetworkConnection connection in _connections)
             {
                 connection.Disconnect(_serverDriver);
-                ClientDisconnected?.Invoke(_actorNumberByConnection[connection]);
             }
 
             _connections.Clear();
             _actorNumberByConnection.Clear();
             _connectionByActorNumber.Clear();
+            _acceptedActors.Clear();
             _lastPingTimes.Clear();
+
+            foreach (int actorNumber in clientActorNumbers)
+            {
+                ClientDisconnected?.Invoke(actorNumber);
+            }
         }
 
         private void SendSpawnMessage(NetObject[] netObjects, NativeList<NetworkConnection> connections)
