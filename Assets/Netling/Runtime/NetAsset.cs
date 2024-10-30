@@ -42,7 +42,7 @@ namespace Netling
 #if UNITY_EDITOR
             EditorUtility.SetDirty(this);
 #endif
-            OnEnable();
+            PrepareRPCDelegates();
         }
 
         private Type[] GetBaseTypes(Type type)
@@ -65,6 +65,11 @@ namespace Netling
         }
 
         protected virtual void OnEnable()
+        {
+            PrepareRPCDelegates();
+        }
+
+        private void PrepareRPCDelegates()
         {
             MethodInfo[] unsortedRPCMethods =
                 GetBaseTypes(GetType())
