@@ -27,7 +27,7 @@ namespace Netling
         private bool _initialized;
         private NetworkDriver _serverDriver;
         private NativeList<NetworkConnection> _connections;
-        private float _clientConnectionTimeout;
+        private float _connectionTimeout;
 
         private readonly Dictionary<NetworkConnection, int> _actorNumberByConnection = new();
         private readonly Dictionary<int, NetworkConnection> _connectionByActorNumber = new();
@@ -37,28 +37,24 @@ namespace Netling
         private NetworkEndpoint _endPoint;
         private NetworkPipeline _unreliablePipeline;
         private NetworkPipeline _reliablePipeline;
-        private bool _acceptAllPlayers;
+        private bool _acceptAllActors;
         private bool _useSimulationPipeline;
         private ushort[] _ports;
 
         public delegate void ConnectionDelegate(int actorNumber);
 
-        public delegate void PlayerDataDelegate(int actorNumber, string playerData);
-
         public event Action Started;
         public event Action Stopped;
         public event ConnectionDelegate ClientConnected;
         public event ConnectionDelegate ClientDisconnected;
-        public event ConnectionDelegate PlayerAccepted;
-        public event PlayerDataDelegate PlayerDataReceived;
+        public event ConnectionDelegate ActorAccepted;
 
-        public void Init(ushort[] ports, float clientConnectionTimeout, bool acceptAllPlayers,
-            bool useSimulationPipeline)
+        public void Init(ushort[] ports, float connectionTimeout, bool acceptAllActors, bool useSimulationPipeline)
         {
-            _clientConnectionTimeout = clientConnectionTimeout;
+            _connectionTimeout = connectionTimeout;
             _endPoint = NetworkEndpoint.AnyIpv4;
             _ports = ports;
-            _acceptAllPlayers = acceptAllPlayers;
+            _acceptAllActors = acceptAllActors;
             _useSimulationPipeline = useSimulationPipeline;
             _initialized = true;
         }
@@ -120,7 +116,7 @@ namespace Netling
                 _actorNumberByConnection.Clear();
                 _connectionByActorNumber.Clear();
                 _lastPingTimes.Clear();
-                if(quitOnFail) Application.Quit(-1);
+                if (quitOnFail) Application.Quit(-1);
                 throw new NetException("Failed to bind to any port");
             }
         }
@@ -182,7 +178,7 @@ namespace Netling
                 // check for timeout
                 NetworkConnection connection = _connections[i];
                 int actorNumber = _actorNumberByConnection[connection];
-                if (_clientConnectionTimeout > 0 && Time - _lastPingTimes[connection] > _clientConnectionTimeout)
+                if (_connectionTimeout > 0 && Time - _lastPingTimes[connection] > _connectionTimeout)
                 {
                     connection.Disconnect(_serverDriver);
                     Debug.LogWarning($"Disconnecting client {actorNumber} due to timeout");
@@ -226,13 +222,7 @@ namespace Netling
                 {
                     case Commands.AcknowledgeActorNumber:
                     {
-                        if (_acceptAllPlayers) AcceptPlayer(senderActorNumber);
-                        break;
-                    }
-                    case Commands.PlayerData:
-                    {
-                        string playerData = streamReader.ReadManagedString();
-                        PlayerDataReceived?.Invoke(senderActorNumber, playerData);
+                        if (_acceptAllActors) AcceptPlayer(senderActorNumber);
                         break;
                     }
                     case Commands.Ping:
@@ -359,11 +349,11 @@ namespace Netling
             Debug.Log($"Accepting player of client {actorNumber}");
             var connections = new NativeList<NetworkConnection>(1, Allocator.Temp) { connection };
             _serverDriver.BeginSend(_reliablePipeline, connection, out DataStreamWriter writer);
-            writer.WriteInt(Commands.AcceptPlayer);
+            writer.WriteInt(Commands.AcceptActor);
             _serverDriver.EndSend(writer);
             SendNetAssetUpdate(true, connections);
             connections.Dispose();
-            PlayerAccepted?.Invoke(actorNumber);
+            ActorAccepted?.Invoke(actorNumber);
         }
 
         public void Kick(int actorNumber)

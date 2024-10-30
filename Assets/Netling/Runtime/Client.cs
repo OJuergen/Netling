@@ -153,7 +153,7 @@ namespace Netling
                             DataSent?.Invoke(writer.Length);
                             break;
                         }
-                        case Commands.AcceptPlayer:
+                        case Commands.AcceptActor:
                         {
                             _clientDriver.BeginSend(_reliablePipeline, _clientToServerConnection,
                                 out DataStreamWriter writer);
@@ -370,18 +370,6 @@ namespace Netling
             writer.WriteInt(1);
             writer.WriteInt(scene.buildIndex);
             _clientDriver.EndSend(writer);
-        }
-
-        public void SendPlayerData(string playerData)
-        {
-            if (State != ClientState.Connected)
-                throw new InvalidOperationException("Cannot send player data: client not connected");
-
-            _clientDriver.BeginSend(_reliablePipeline, _clientToServerConnection, out DataStreamWriter writer);
-            writer.WriteInt(Commands.PlayerData);
-            writer.WriteManagedString(playerData);
-            _clientDriver.EndSend(writer);
-            DataSent?.Invoke(writer.Length);
         }
 
         public void SendBatchedNetObjectsUpdate()
