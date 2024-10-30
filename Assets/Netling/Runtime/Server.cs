@@ -38,11 +38,11 @@ namespace Netling
         private NetworkEndpoint _endPoint;
         private NetworkPipeline _unreliablePipeline;
         private NetworkPipeline _reliablePipeline;
-        private bool _acceptAllActors;
+        private bool _acceptAllClients;
         private bool _useSimulationPipeline;
         private ushort[] _ports;
-        private readonly HashSet<int> _acceptedActors = new();
-        public int[] AcceptedActors => _acceptedActors.ToArray();
+        private readonly HashSet<int> _acceptedClients = new();
+        public int[] AcceptedClients => _acceptedClients.ToArray();
 
         public delegate void ConnectionDelegate(int actorNumber);
 
@@ -50,14 +50,14 @@ namespace Netling
         public event Action Stopped;
         public event ConnectionDelegate ClientConnected;
         public event ConnectionDelegate ClientDisconnected;
-        public event ConnectionDelegate ActorAccepted;
+        public event ConnectionDelegate ClientAccepted;
 
         public void Init(ushort[] ports, float connectionTimeout, bool acceptAllActors, bool useSimulationPipeline)
         {
             _connectionTimeout = connectionTimeout;
             _endPoint = NetworkEndpoint.AnyIpv4;
             _ports = ports;
-            _acceptAllActors = acceptAllActors;
+            _acceptAllClients = acceptAllActors;
             _useSimulationPipeline = useSimulationPipeline;
             _initialized = true;
         }
@@ -188,7 +188,7 @@ namespace Netling
                     _connections.RemoveAtSwapBack(i);
                     _actorNumberByConnection.Remove(connection);
                     _connectionByActorNumber.Remove(actorNumber);
-                    _acceptedActors.Remove(actorNumber);
+                    _acceptedClients.Remove(actorNumber);
                     ClientDisconnected?.Invoke(actorNumber);
                     continue;
                 }
@@ -208,7 +208,7 @@ namespace Netling
                         _connections.RemoveAtSwapBack(i);
                         _actorNumberByConnection.Remove(connection);
                         _connectionByActorNumber.Remove(actorNumber);
-                        _acceptedActors.Remove(actorNumber);
+                        _acceptedClients.Remove(actorNumber);
                         ClientDisconnected?.Invoke(actorNumber);
                         if (i >= _connections.Length)
                             break;
@@ -227,7 +227,7 @@ namespace Netling
                 {
                     case Commands.AcknowledgeActorNumber:
                     {
-                        if (_acceptAllActors) AcceptActor(senderActorNumber);
+                        if (_acceptAllClients) AcceptClient(senderActorNumber);
                         break;
                     }
                     case Commands.Ping:
@@ -345,21 +345,21 @@ namespace Netling
             }
         }
 
-        public void AcceptActor(int actorNumber)
+        public void AcceptClient(int actorNumber)
         {
             if (!IsActive)
                 throw new InvalidOperationException("Cannot accept actor: Server not running");
 
             NetworkConnection connection = _connectionByActorNumber[actorNumber];
-            Debug.Log($"Accepting actor with number {actorNumber}");
+            Debug.Log($"Accepting client with actor number {actorNumber}");
             var connections = new NativeList<NetworkConnection>(1, Allocator.Temp) { connection };
             _serverDriver.BeginSend(_reliablePipeline, connection, out DataStreamWriter writer);
             writer.WriteInt(Commands.AcceptActor);
             _serverDriver.EndSend(writer);
             SendNetAssetUpdate(true, connections);
             connections.Dispose();
-            _acceptedActors.Add(actorNumber);
-            ActorAccepted?.Invoke(actorNumber);
+            _acceptedClients.Add(actorNumber);
+            ClientAccepted?.Invoke(actorNumber);
         }
 
         public void Kick(int actorNumber)
@@ -374,7 +374,7 @@ namespace Netling
                 _connections.RemoveAtSwapBack(_connections.IndexOf(connection));
                 _connectionByActorNumber.Remove(actorNumber);
                 _actorNumberByConnection.Remove(connection);
-                _acceptedActors.Remove(actorNumber);
+                _acceptedClients.Remove(actorNumber);
                 ClientDisconnected?.Invoke(actorNumber);
             }
             else
@@ -397,7 +397,7 @@ namespace Netling
             _connections.Clear();
             _actorNumberByConnection.Clear();
             _connectionByActorNumber.Clear();
-            _acceptedActors.Clear();
+            _acceptedClients.Clear();
             _lastPingTimes.Clear();
 
             foreach (int actorNumber in clientActorNumbers)

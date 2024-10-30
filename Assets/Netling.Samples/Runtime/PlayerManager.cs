@@ -14,17 +14,17 @@ namespace Netling.Samples
         public void Init([NotNull] Player playerPrefab)
         {
             _playerPrefab = playerPrefab;
-            Server.Instance.ActorAccepted += OnActorAccepted;
+            Server.Instance.ClientAccepted += OnClientAccepted;
             Server.Instance.ClientDisconnected += OnClientDisconnected;
         }
 
         ~PlayerManager()
         {
-            Server.Instance.ActorAccepted -= OnActorAccepted;
+            Server.Instance.ClientAccepted -= OnClientAccepted;
             Server.Instance.ClientDisconnected -= OnClientDisconnected;
         }
 
-        private void OnActorAccepted(int actorNumber)
+        private void OnClientAccepted(int actorNumber)
         {
             if (_players.ContainsKey(actorNumber))
             {
