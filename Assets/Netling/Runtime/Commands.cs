@@ -2,9 +2,9 @@ namespace Netling
 {
     public static class Commands
     {
-        public const int AssignActorNumber = 0;
-        public const int AcknowledgeActorNumber = 1;
-        public const int AcceptActor = 2;
+        public const int AssignClientID = 0;
+        public const int AcknowledgeClientID = 1;
+        public const int AcceptClient = 2;
         public const int Ping = 3;
         public const int RequestSpawnMessage = 4;
         public const int SpawnNetObjects = 5;

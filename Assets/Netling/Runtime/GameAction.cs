@@ -15,9 +15,9 @@ namespace Netling
         public abstract void SerializeParameters(ref DataStreamWriter writer, IParameters parameters);
         public abstract IParameters DeserializeParameters(ref DataStreamReader reader);
 
-        public abstract void ReceiveOnClient(IParameters parameters, bool valid, int actorNumber, float triggerTime);
+        public abstract void ReceiveOnClient(IParameters parameters, bool valid, int clientID, float triggerTime);
 
-        public abstract void ReceiveOnServer(IParameters parameters, int actorNumber, int senderActorNumber,
+        public abstract void ReceiveOnServer(IParameters parameters, int clientID, int senderClientID,
             float triggerTime);
     }
 
@@ -43,46 +43,46 @@ namespace Netling
         {
             if (Server.IsActive)
             {
-                int actorNumber = Client.Instance.IsHost ? Client.Instance.ActorNumber : Server.ServerActorNumber;
-                TriggerOnServer(parameters, actorNumber);
+                int clientID = Client.Instance.IsHost ? Client.Instance.ID : Server.ServerClientID;
+                TriggerOnServer(parameters, clientID);
             }
             else
                 TriggerOnClient(parameters);
         }
 
-        protected void Trigger(T parameters, int actorNumber)
+        protected void Trigger(T parameters, int clientID)
         {
-            if (Server.IsActive) TriggerOnServer(parameters, actorNumber);
+            if (Server.IsActive) TriggerOnServer(parameters, clientID);
             else TriggerOnClient(parameters);
         }
 
-        private void TriggerOnServer(T parameters, int actorNumber)
+        private void TriggerOnServer(T parameters, int clientID)
         {
             Server.AssertActive();
-            if (IsValid(parameters, actorNumber, Server.Time))
+            if (IsValid(parameters, clientID, Server.Time))
             {
-                Execute(parameters, actorNumber, Server.Time);
-                Server.Instance.SendGameAction(this, parameters, actorNumber, Server.Time);
+                Execute(parameters, clientID, Server.Time);
+                Server.Instance.SendGameAction(this, parameters, clientID, Server.Time);
             }
             else
             {
-                Deny(parameters, actorNumber, Server.Time);
+                Deny(parameters, clientID, Server.Time);
             }
         }
 
         private void TriggerOnClient(T parameters)
         {
-            if (IsValid(parameters, Client.Instance.ActorNumber, Server.Time))
+            if (IsValid(parameters, Client.Instance.ID, Server.Time))
             {
-                if (Optimistic) Execute(parameters, Client.Instance.ActorNumber, Server.Time);
+                if (Optimistic) Execute(parameters, Client.Instance.ID, Server.Time);
 
                 if (Client.Instance.IsConnected) Client.Instance.SendGameAction(this, parameters);
                 else Debug.LogWarning("Cannot trigger game action: client not connected");
             }
-            else Deny(parameters, Client.Instance.ActorNumber, Server.Time);
+            else Deny(parameters, Client.Instance.ID, Server.Time);
         }
 
-        public override void ReceiveOnClient(IParameters parameters, bool valid, int actorNumber, float triggerTime)
+        public override void ReceiveOnClient(IParameters parameters, bool valid, int clientID, float triggerTime)
         {
             if (!(parameters is T tParameter))
                 throw new ArgumentException(
@@ -90,17 +90,17 @@ namespace Netling
 
             if (valid)
             {
-                if (!Optimistic || Client.Instance.ActorNumber != actorNumber)
-                    Execute(tParameter, actorNumber, triggerTime);
+                if (!Optimistic || Client.Instance.ID != clientID)
+                    Execute(tParameter, clientID, triggerTime);
             }
             else
             {
-                if (Optimistic) Rollback(tParameter, actorNumber, triggerTime);
-                else Deny(tParameter, actorNumber, triggerTime);
+                if (Optimistic) Rollback(tParameter, clientID, triggerTime);
+                else Deny(tParameter, clientID, triggerTime);
             }
         }
 
-        public override void ReceiveOnServer(IParameters parameters, int actorNumber, int senderActorNumber,
+        public override void ReceiveOnServer(IParameters parameters, int clientID, int senderClientID,
             float triggerTime)
         {
             if (!(parameters is T tParameter))
@@ -109,24 +109,24 @@ namespace Netling
 
             if (!Server.IsActive)
             {
-                Debug.LogWarning($"Cannot handle event {parameters} by {senderActorNumber}: Server inactive");
+                Debug.LogWarning($"Cannot handle event {parameters} by {senderClientID}: Server inactive");
                 return;
             }
 
-            bool valid = IsValid(tParameter, actorNumber, triggerTime);
-            // todo maybe kick sender, if sender not actor or trigger time in the future?
-            if (valid && senderActorNumber == actorNumber && triggerTime <= Server.Time)
+            bool valid = IsValid(tParameter, clientID, triggerTime);
+            // todo maybe kick sender, if sender not client or trigger time in the future?
+            if (valid && senderClientID == clientID && triggerTime <= Server.Time)
             {
-                if (!Client.Instance.IsConnected || Client.Instance.ActorNumber != senderActorNumber || !Optimistic)
-                    Execute(tParameter, actorNumber, triggerTime);
-                Server.Instance.SendGameAction(this, parameters, actorNumber, triggerTime);
+                if (!Client.Instance.IsConnected || Client.Instance.ID != senderClientID || !Optimistic)
+                    Execute(tParameter, clientID, triggerTime);
+                Server.Instance.SendGameAction(this, parameters, clientID, triggerTime);
             }
-            else Server.Instance.DenyGameAction(this, parameters, senderActorNumber, triggerTime);
+            else Server.Instance.DenyGameAction(this, parameters, senderClientID, triggerTime);
         }
 
-        protected abstract bool IsValid(T parameters, int actorNumber, float triggerTime);
-        protected abstract void Execute(T parameters, int actorNumber, float triggerTime);
-        protected abstract void Deny(T parameters, int actorNumber, float triggerTime);
-        protected abstract void Rollback(T parameters, int actorNumber, float triggerTime);
+        protected abstract bool IsValid(T parameters, int clientID, float triggerTime);
+        protected abstract void Execute(T parameters, int clientID, float triggerTime);
+        protected abstract void Deny(T parameters, int clientID, float triggerTime);
+        protected abstract void Rollback(T parameters, int clientID, float triggerTime);
     }
 }

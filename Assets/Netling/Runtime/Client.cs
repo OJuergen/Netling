@@ -26,7 +26,7 @@ namespace Netling
         public bool IsHost => Server.IsActive && IsConnected;
         public bool UseLocalhost { get; set; }
 
-        public int ActorNumber { get; private set; } = -2;
+        public int ID { get; private set; } = -2;
         public event Action<ClientState> StateChanged;
 
         private ushort _port;
@@ -142,18 +142,18 @@ namespace Netling
                     int command = streamReader.ReadInt();
                     switch (command)
                     {
-                        case Commands.AssignActorNumber:
+                        case Commands.AssignClientID:
                         {
-                            ActorNumber = streamReader.ReadInt();
-                            Debug.Log($"Got assigned actor number {ActorNumber}");
+                            ID = streamReader.ReadInt();
+                            Debug.Log($"Got assigned client ID {ID}");
                             _clientDriver.BeginSend(_reliablePipeline, _clientToServerConnection,
                                 out DataStreamWriter writer);
-                            writer.WriteInt(Commands.AcknowledgeActorNumber);
+                            writer.WriteInt(Commands.AcknowledgeClientID);
                             _clientDriver.EndSend(writer);
                             DataSent?.Invoke(writer.Length);
                             break;
                         }
-                        case Commands.AcceptActor:
+                        case Commands.AcceptClient:
                         {
                             _clientDriver.BeginSend(_reliablePipeline, _clientToServerConnection,
                                 out DataStreamWriter writer);
@@ -192,7 +192,7 @@ namespace Netling
                             {
                                 int netObjID = streamReader.ReadInt();
                                 ushort prefabIndex = streamReader.ReadUShort();
-                                int ownerActorNumber = streamReader.ReadInt();
+                                int ownerClientID = streamReader.ReadInt();
                                 Vector3 position = streamReader.ReadVector3();
                                 Quaternion rotation = streamReader.ReadQuaternion();
                                 int sceneBuildIndex = streamReader.ReadInt();
@@ -212,7 +212,7 @@ namespace Netling
                                     }
 
                                     NetObject netObject = NetObjectManager.Instance.SpawnOnClient(netObjID, prefabIndex,
-                                        scene, parent, position, rotation, ownerActorNumber);
+                                        scene, parent, position, rotation, ownerClientID);
                                     if (netObject != null)
                                     {
                                         netObject.Deserialize(ref streamReader, _ => true);
@@ -298,14 +298,14 @@ namespace Netling
                         {
                             if (IsHost) break;
                             int gameActionID = streamReader.ReadInt();
-                            int actorNumber = streamReader.ReadInt();
+                            int clientID = streamReader.ReadInt();
                             float triggerTime = streamReader.ReadFloat();
                             bool valid = streamReader.ReadBool();
                             try
                             {
                                 GameAction gameAction = GameActionManager.Instance.Get(gameActionID);
                                 GameAction.IParameters parameters = gameAction.DeserializeParameters(ref streamReader);
-                                gameAction.ReceiveOnClient(parameters, valid, actorNumber, triggerTime);
+                                gameAction.ReceiveOnClient(parameters, valid, clientID, triggerTime);
                                 break;
                             }
                             catch (Exception e)
@@ -322,7 +322,7 @@ namespace Netling
                             NetAsset netAsset = NetAssetManager.Instance.Get(netAssetID);
                             NetAsset.RPC rpc = netAsset.DeserializeRPC(ref streamReader);
                             var messageInfo = new MessageInfo
-                                { SentServerTime = sentServerTime, SenderActorNumber = Server.ServerActorNumber };
+                                { SentServerTime = sentServerTime, SenderClientID = Server.ServerClientID };
                             rpc.Invoke(messageInfo);
                             break;
                         }
@@ -343,7 +343,7 @@ namespace Netling
                             NetObjectManager.RPC rpc =
                                 NetObjectManager.Instance.DeserializeRPC(ref streamReader, netBehaviour);
                             var messageInfo = new MessageInfo
-                                { SentServerTime = sentServerTime, SenderActorNumber = Server.ServerActorNumber };
+                                { SentServerTime = sentServerTime, SenderClientID = Server.ServerClientID };
                             rpc.Invoke(messageInfo);
                             break;
                         }
@@ -470,7 +470,7 @@ namespace Netling
             _clientDriver.BeginSend(_reliablePipeline, _clientToServerConnection, out DataStreamWriter streamWriter);
             streamWriter.WriteInt(Commands.GameAction);
             streamWriter.WriteInt(GameActionManager.Instance.GetID(gameAction));
-            streamWriter.WriteInt(ActorNumber);
+            streamWriter.WriteInt(ID);
             streamWriter.WriteFloat(Server.Time);
             gameAction.SerializeParameters(ref streamWriter, parameters);
             _clientDriver.EndSend(streamWriter);

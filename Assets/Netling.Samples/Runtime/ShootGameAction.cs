@@ -36,18 +36,18 @@ namespace Netling.Samples
             Trigger(new Parameters(muzzlePosition, muzzleOrientation));
         }
 
-        protected override bool IsValid(Parameters parameters, int actorNumber, float triggerTime)
+        protected override bool IsValid(Parameters parameters, int clientID, float triggerTime)
         {
-            Player player = PlayerManager.Instance.Get(actorNumber);
+            Player player = PlayerManager.Instance.Get(clientID);
             if (player == null) return false;
             var gunController = player.GetComponent<GunController>();
             if (gunController == null) return false;
             return gunController.Ammo > 0;
         }
 
-        protected override void Execute(Parameters parameters, int actorNumber, float triggerTime)
+        protected override void Execute(Parameters parameters, int clientID, float triggerTime)
         {
-            Player player = PlayerManager.Instance.Get(actorNumber);
+            Player player = PlayerManager.Instance.Get(clientID);
             var gunController = player.GetComponent<GunController>();
             GameObject bulletContainer = GameObject.Find("BulletContainer") ?? new GameObject("BulletContainer");
             if (Server.IsActive)
@@ -62,14 +62,14 @@ namespace Netling.Samples
             // todo play shot sound
         }
 
-        protected override void Deny(Parameters parameters, int actorNumber, float triggerTime)
+        protected override void Deny(Parameters parameters, int clientID, float triggerTime)
         {
             // todo play click sound
         }
 
-        protected override void Rollback(Parameters parameters, int actorNumber, float triggerTime)
+        protected override void Rollback(Parameters parameters, int clientID, float triggerTime)
         {
-            Player player = PlayerManager.Instance.Get(actorNumber);
+            Player player = PlayerManager.Instance.Get(clientID);
             if (player == null) return;
             var gunController = player.GetComponent<GunController>();
             if (gunController == null) return;

@@ -5,7 +5,7 @@ namespace Netling.Samples
         private void Start()
         {
             PlayerManager.Instance.Register(this);
-            gameObject.name = IsLocal ? "Local Player" : $"Remote Player ({OwnerActorNumber})";
+            gameObject.name = IsLocal ? "Local Player" : $"Remote Player ({OwnerClientID})";
         }
 
         private void OnDestroy()

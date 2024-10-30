@@ -63,9 +63,9 @@ namespace Netling
             : _netObject = GetComponentsInParent<NetObject>(true).SingleOrDefault();
 
         /// <summary>
-        /// The actor number of the owning client.
+        /// The client ID of the owning client.
         /// </summary>
-        public int OwnerActorNumber => NetObject.OwnerActorNumber;
+        public int OwnerClientID => NetObject.OwnerClientID;
 
         private byte _dirtyMask = 255;
         private bool _authorityDirty; // client-authority flag needs sync

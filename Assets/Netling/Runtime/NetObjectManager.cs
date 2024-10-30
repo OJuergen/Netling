@@ -249,10 +249,10 @@ namespace Netling
             return messageInfo => _rpcDelegates[rpcid].Invoke(netBehaviour, messageInfo, arguments);
         }
 
-        private void OnClientDisconnected(int actorNumber)
+        private void OnClientDisconnected(int clientID)
         {
             Server.Instance.UnspawnNetObjects(NetObjects
-                .Where(netObject => netObject.OwnerActorNumber == actorNumber)
+                .Where(netObject => netObject.OwnerClientID == clientID)
                 .ToArray());
         }
 
@@ -271,17 +271,17 @@ namespace Netling
         }
 
         public T SpawnOnServer<T>(T networkBehaviourPrefab, Vector3 position, Quaternion rotation,
-            Scene scene = default, Transform parent = null, int ownerActorNumber = Server.ServerActorNumber)
+            Scene scene = default, Transform parent = null, int ownerClientID = Server.ServerClientID)
             where T : NetBehaviour
         {
             Server.AssertActive();
             NetObject netObjectPrefab = networkBehaviourPrefab.NetObject;
-            return SpawnOnServer(netObjectPrefab, position, rotation, scene, parent, ownerActorNumber)
+            return SpawnOnServer(netObjectPrefab, position, rotation, scene, parent, ownerClientID)
                 .GetComponent<T>();
         }
 
         public NetObject SpawnOnServer(NetObject netObjectPrefab, Vector3 position, Quaternion rotation,
-            Scene scene = default, Transform parent = null, int ownerActorNumber = Server.ServerActorNumber)
+            Scene scene = default, Transform parent = null, int ownerClientID = Server.ServerClientID)
         {
             Server.AssertActive();
             if (!_netObjectPrefabs.Contains(netObjectPrefab))
@@ -292,7 +292,7 @@ namespace Netling
             var prefabIndex = (ushort)_netObjectPrefabs.IndexOf(netObjectPrefab);
             int id = _nextId++;
             NetObject netObject =
-                netObjectPrefab.Create(id, prefabIndex, scene, parent, position, rotation, ownerActorNumber);
+                netObjectPrefab.Create(id, prefabIndex, scene, parent, position, rotation, ownerClientID);
 
             _objectsById.Add(id, netObject);
             _objectCount = _objectsById.Count;
@@ -302,7 +302,7 @@ namespace Netling
         }
 
         public NetObject SpawnOnClient(int id, ushort prefabIndex, Scene scene, Transform parent, Vector3 position,
-            Quaternion rotation, int ownerActorNumber)
+            Quaternion rotation, int ownerClientID)
         {
             if (_netObjectPrefabs.Count < prefabIndex + 1)
                 throw new Exception($"Cannot instantiate network object with prefab index {prefabIndex}");
@@ -312,7 +312,7 @@ namespace Netling
                 if (!scene.isLoaded) throw new ArgumentException($"Scene {scene} not loaded");
                 NetObject netObject =
                     _netObjectPrefabs[prefabIndex].Create(id, prefabIndex, scene, parent, position, rotation,
-                        ownerActorNumber);
+                        ownerClientID);
                 _objectsById.Add(id, netObject);
                 _objectCount = _objectsById.Count;
                 NetObjectAdded?.Invoke(netObject);

@@ -10,7 +10,7 @@ namespace Netling
     public sealed class NetObject : MonoBehaviour
     {
         [SerializeField, NotEditable] private NetBehaviour[] _netBehaviours;
-        private int _ownerActorNumber = Server.ServerActorNumber;
+        private int _ownerClientID = Server.ServerClientID;
         public bool IsInitialized { get; private set; }
 
         private int _id;
@@ -37,20 +37,20 @@ namespace Netling
             private set => _prefabIndex = value;
         }
 
-        public int OwnerActorNumber
+        public int OwnerClientID
         {
             get
             {
                 if (Application.isPlaying && !IsInitialized)
-                    throw new InvalidOperationException("Cannot query OwnerActorNumber of uninitialized NetObject");
-                return _ownerActorNumber;
+                    throw new InvalidOperationException("Cannot query owner client ID of uninitialized NetObject");
+                return _ownerClientID;
             }
-            private set => _ownerActorNumber = value;
+            private set => _ownerClientID = value;
         }
 
         public bool IsDirty { get; private set; }
-        public bool IsMine => OwnerActorNumber == Client.Instance.ActorNumber
-                              || Server.IsActive && OwnerActorNumber == Server.ServerActorNumber;
+        public bool IsMine => OwnerClientID == Client.Instance.ID
+                              || Server.IsActive && OwnerClientID == Server.ServerClientID;
         public NetBehaviour[] NetBehaviours => _netBehaviours;
 
         private void OnValidate()
@@ -58,11 +58,11 @@ namespace Netling
             AssignIDs();
         }
 
-        private void Init(int id, ushort prefabIndex, int ownerActorNumber)
+        private void Init(int id, ushort prefabIndex, int ownerClientID)
         {
             ID = id;
             PrefabIndex = prefabIndex;
-            OwnerActorNumber = ownerActorNumber;
+            OwnerClientID = ownerClientID;
             IsInitialized = true;
         }
 
@@ -97,11 +97,11 @@ namespace Netling
             return _netBehaviours[netBehaviourID];
         }
 
-        public NetObject Create(int id, ushort prefabIndex, Scene scene, Transform parent, Vector3 position, Quaternion rotation, int ownerActorNumber)
+        public NetObject Create(int id, ushort prefabIndex, Scene scene, Transform parent, Vector3 position, Quaternion rotation, int ownerClientID)
         {
             NetObject netObject = Instantiate(this, position, rotation, parent);
             if(parent == null && scene.isLoaded) SceneManager.MoveGameObjectToScene(netObject.gameObject, scene);
-            netObject.Init(id, prefabIndex, ownerActorNumber);
+            netObject.Init(id, prefabIndex, ownerClientID);
             return netObject;
         }
 

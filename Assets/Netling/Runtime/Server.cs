@@ -17,7 +17,7 @@ namespace Netling
         private static Server _instance;
         public static Server Instance => _instance ??= new Server();
 
-        public const int ServerActorNumber = -1;
+        public const int ServerClientID = -1;
         private const int MaxBytesPerMessage = 1300; // 1400 causes errors on receiving side
 
         public static float Time =>
@@ -30,10 +30,12 @@ namespace Netling
         private NativeList<NetworkConnection> _connections;
         private float _connectionTimeout;
 
-        private readonly Dictionary<NetworkConnection, int> _actorNumberByConnection = new();
-        private readonly Dictionary<int, NetworkConnection> _connectionByActorNumber = new();
+        private readonly Dictionary<NetworkConnection, int> _clientIDByConnection = new();
+        private readonly Dictionary<int, NetworkConnection> _connectionByClientID = new();
+        private readonly HashSet<int> _acceptedClients = new();
         private readonly Dictionary<NetworkConnection, float> _lastPingTimes = new();
-        private int _nextActorNumber; // todo make this ulong and name clientId
+        private int _nextClientID;
+        public int[] AcceptedClients => _acceptedClients.ToArray();
 
         private NetworkEndpoint _endPoint;
         private NetworkPipeline _unreliablePipeline;
@@ -41,10 +43,8 @@ namespace Netling
         private bool _acceptAllClients;
         private bool _useSimulationPipeline;
         private ushort[] _ports;
-        private readonly HashSet<int> _acceptedClients = new();
-        public int[] AcceptedClients => _acceptedClients.ToArray();
 
-        public delegate void ConnectionDelegate(int actorNumber);
+        public delegate void ConnectionDelegate(int clientID);
 
         public event Action Started;
         public event Action Stopped;
@@ -52,12 +52,12 @@ namespace Netling
         public event ConnectionDelegate ClientDisconnected;
         public event ConnectionDelegate ClientAccepted;
 
-        public void Init(ushort[] ports, float connectionTimeout, bool acceptAllActors, bool useSimulationPipeline)
+        public void Init(ushort[] ports, float connectionTimeout, bool acceptAllClients, bool useSimulationPipeline)
         {
             _connectionTimeout = connectionTimeout;
             _endPoint = NetworkEndpoint.AnyIpv4;
             _ports = ports;
-            _acceptAllClients = acceptAllActors;
+            _acceptAllClients = acceptAllClients;
             _useSimulationPipeline = useSimulationPipeline;
             _initialized = true;
         }
@@ -116,8 +116,10 @@ namespace Netling
             {
                 _connections.Dispose();
                 _serverDriver.Dispose();
-                _actorNumberByConnection.Clear();
-                _connectionByActorNumber.Clear();
+                _clientIDByConnection.Clear();
+                _connectionByClientID.Clear();
+                _acceptedClients.Clear();
+                _nextClientID = 0;
                 _lastPingTimes.Clear();
                 if (quitOnFail) Application.Quit(-1);
                 throw new NetException("Failed to bind to any port");
@@ -140,8 +142,8 @@ namespace Netling
             }
 
             _serverDriver.ScheduleUpdate().Complete(); // send disconnection events
-            _actorNumberByConnection.Clear();
-            _connectionByActorNumber.Clear();
+            _clientIDByConnection.Clear();
+            _connectionByClientID.Clear();
             if (_serverDriver.IsCreated) _serverDriver.Dispose();
             if (_connections.IsCreated) _connections.Dispose();
             IsActive = false;
@@ -162,17 +164,17 @@ namespace Netling
                     break;
                 }
 
-                int actorNumber = _nextActorNumber++;
+                int clientID = _nextClientID++;
                 _connections.Add(connection);
-                _actorNumberByConnection[connection] = actorNumber;
-                _connectionByActorNumber[actorNumber] = connection;
+                _clientIDByConnection[connection] = clientID;
+                _connectionByClientID[clientID] = connection;
                 _lastPingTimes[connection] = Time;
-                Debug.Log($"Client connected. Assigning actor number {actorNumber}.");
+                Debug.Log($"Client connected. Assigning ID {clientID}.");
                 _serverDriver.BeginSend(_reliablePipeline, connection, out DataStreamWriter writer);
-                writer.WriteInt(Commands.AssignActorNumber);
-                writer.WriteInt(actorNumber);
+                writer.WriteInt(Commands.AssignClientID);
+                writer.WriteInt(clientID);
                 _serverDriver.EndSend(writer);
-                ClientConnected?.Invoke(actorNumber);
+                ClientConnected?.Invoke(clientID);
             }
 
             // process open connections
@@ -180,16 +182,16 @@ namespace Netling
             {
                 // check for timeout
                 NetworkConnection connection = _connections[i];
-                int actorNumber = _actorNumberByConnection[connection];
+                int clientID = _clientIDByConnection[connection];
                 if (_connectionTimeout > 0 && Time - _lastPingTimes[connection] > _connectionTimeout)
                 {
                     connection.Disconnect(_serverDriver);
-                    Debug.LogWarning($"Disconnecting client {actorNumber} due to timeout");
+                    Debug.LogWarning($"Disconnecting client {clientID} due to timeout");
                     _connections.RemoveAtSwapBack(i);
-                    _actorNumberByConnection.Remove(connection);
-                    _connectionByActorNumber.Remove(actorNumber);
-                    _acceptedClients.Remove(actorNumber);
-                    ClientDisconnected?.Invoke(actorNumber);
+                    _clientIDByConnection.Remove(connection);
+                    _connectionByClientID.Remove(clientID);
+                    _acceptedClients.Remove(clientID);
+                    ClientDisconnected?.Invoke(clientID);
                     continue;
                 }
 
@@ -204,12 +206,12 @@ namespace Netling
                     }
                     else if (eventType == NetworkEvent.Type.Disconnect)
                     {
-                        Debug.Log($"Client {actorNumber} disconnected");
+                        Debug.Log($"Client {clientID} disconnected");
                         _connections.RemoveAtSwapBack(i);
-                        _actorNumberByConnection.Remove(connection);
-                        _connectionByActorNumber.Remove(actorNumber);
-                        _acceptedClients.Remove(actorNumber);
-                        ClientDisconnected?.Invoke(actorNumber);
+                        _clientIDByConnection.Remove(connection);
+                        _connectionByClientID.Remove(clientID);
+                        _acceptedClients.Remove(clientID);
+                        ClientDisconnected?.Invoke(clientID);
                         if (i >= _connections.Length)
                             break;
                     }
@@ -221,13 +223,13 @@ namespace Netling
         {
             try
             {
-                int senderActorNumber = _actorNumberByConnection[connection];
+                int senderClientID = _clientIDByConnection[connection];
                 int command = streamReader.ReadInt();
                 switch (command)
                 {
-                    case Commands.AcknowledgeActorNumber:
+                    case Commands.AcknowledgeClientID:
                     {
-                        if (_acceptAllClients) AcceptClient(senderActorNumber);
+                        if (_acceptAllClients) AcceptClient(senderClientID);
                         break;
                     }
                     case Commands.Ping:
@@ -260,8 +262,8 @@ namespace Netling
 
                             // ignore illegal updates and those from local host client
                             if (netObject == null
-                                || netObject.OwnerActorNumber != senderActorNumber // cheater?
-                                || Client.Instance.IsHost && Client.Instance.ActorNumber == senderActorNumber)
+                                || netObject.OwnerClientID != senderClientID // cheater?
+                                || Client.Instance.IsHost && Client.Instance.ID == senderClientID)
                             {
                                 streamReader.DiscardBytes(size);
                             }
@@ -286,14 +288,14 @@ namespace Netling
                     case Commands.GameAction:
                     {
                         int gameActionID = streamReader.ReadInt();
-                        int actorNumber = streamReader.ReadInt();
+                        int clientID = streamReader.ReadInt();
                         float triggerTime = streamReader.ReadFloat();
                         try
                         {
                             GameAction gameAction = GameActionManager.Instance.Get(gameActionID);
                             GameAction.IParameters parameters =
                                 gameAction.DeserializeParameters(ref streamReader);
-                            gameAction.ReceiveOnServer(parameters, actorNumber, senderActorNumber,
+                            gameAction.ReceiveOnServer(parameters, clientID, senderClientID,
                                 triggerTime);
                             break;
                         }
@@ -310,7 +312,7 @@ namespace Netling
                         NetAsset netAsset = NetAssetManager.Instance.Get(netAssetID);
                         NetAsset.RPC rpc = netAsset.DeserializeRPC(ref streamReader);
                         var messageInfo = new MessageInfo
-                            { SentServerTime = sentServerTime, SenderActorNumber = senderActorNumber };
+                            { SentServerTime = sentServerTime, SenderClientID = senderClientID };
                         rpc.Invoke(messageInfo);
                         break;
                     }
@@ -330,7 +332,7 @@ namespace Netling
                         NetObjectManager.RPC rpc =
                             NetObjectManager.Instance.DeserializeRPC(ref streamReader, netBehaviour);
                         var messageInfo = new MessageInfo
-                            { SentServerTime = sentServerTime, SenderActorNumber = senderActorNumber };
+                            { SentServerTime = sentServerTime, SenderClientID = senderClientID };
                         rpc.Invoke(messageInfo);
                         break;
                     }
@@ -345,41 +347,41 @@ namespace Netling
             }
         }
 
-        public void AcceptClient(int actorNumber)
+        public void AcceptClient(int clientID)
         {
             if (!IsActive)
-                throw new InvalidOperationException("Cannot accept actor: Server not running");
+                throw new InvalidOperationException("Cannot accept client: Server not running");
 
-            NetworkConnection connection = _connectionByActorNumber[actorNumber];
-            Debug.Log($"Accepting client with actor number {actorNumber}");
+            NetworkConnection connection = _connectionByClientID[clientID];
+            Debug.Log($"Accepting client with ID {clientID}");
             var connections = new NativeList<NetworkConnection>(1, Allocator.Temp) { connection };
             _serverDriver.BeginSend(_reliablePipeline, connection, out DataStreamWriter writer);
-            writer.WriteInt(Commands.AcceptActor);
+            writer.WriteInt(Commands.AcceptClient);
             _serverDriver.EndSend(writer);
             SendNetAssetUpdate(true, connections);
             connections.Dispose();
-            _acceptedClients.Add(actorNumber);
-            ClientAccepted?.Invoke(actorNumber);
+            _acceptedClients.Add(clientID);
+            ClientAccepted?.Invoke(clientID);
         }
 
-        public void Kick(int actorNumber)
+        public void Kick(int clientID)
         {
             if (!IsActive)
                 throw new InvalidOperationException("Cannot kick client: Server not running");
 
-            if (_connectionByActorNumber.TryGetValue(actorNumber, out NetworkConnection connection))
+            if (_connectionByClientID.TryGetValue(clientID, out NetworkConnection connection))
             {
-                Debug.Log($"Kicking client {actorNumber}");
+                Debug.Log($"Kicking client {clientID}");
                 connection.Disconnect(_serverDriver);
                 _connections.RemoveAtSwapBack(_connections.IndexOf(connection));
-                _connectionByActorNumber.Remove(actorNumber);
-                _actorNumberByConnection.Remove(connection);
-                _acceptedClients.Remove(actorNumber);
-                ClientDisconnected?.Invoke(actorNumber);
+                _connectionByClientID.Remove(clientID);
+                _clientIDByConnection.Remove(connection);
+                _acceptedClients.Remove(clientID);
+                ClientDisconnected?.Invoke(clientID);
             }
             else
             {
-                Debug.LogWarning($"Tried to kick client {actorNumber}, but did not find respective connection.");
+                Debug.LogWarning($"Tried to kick client {clientID}, but did not find respective connection.");
             }
         }
 
@@ -388,21 +390,21 @@ namespace Netling
             if (!IsActive)
                 throw new InvalidOperationException("Cannot kick client: Server not running");
 
-            int[] clientActorNumbers = _actorNumberByConnection.Values.ToArray();
+            int[] clientIDs = _clientIDByConnection.Values.ToArray();
             foreach (NetworkConnection connection in _connections)
             {
                 connection.Disconnect(_serverDriver);
             }
 
             _connections.Clear();
-            _actorNumberByConnection.Clear();
-            _connectionByActorNumber.Clear();
+            _clientIDByConnection.Clear();
+            _connectionByClientID.Clear();
             _acceptedClients.Clear();
             _lastPingTimes.Clear();
 
-            foreach (int actorNumber in clientActorNumbers)
+            foreach (int clientID in clientIDs)
             {
-                ClientDisconnected?.Invoke(actorNumber);
+                ClientDisconnected?.Invoke(clientID);
             }
         }
 
@@ -441,7 +443,7 @@ namespace Netling
                         NetObject netObject = netObjects[objectIndex++];
                         objectWriter.WriteInt(netObject.ID);
                         objectWriter.WriteUShort(netObject.PrefabIndex);
-                        objectWriter.WriteInt(netObject.OwnerActorNumber);
+                        objectWriter.WriteInt(netObject.OwnerClientID);
                         objectWriter.WriteVector3(netObject.transform.localPosition);
                         objectWriter.WriteQuaternion(netObject.transform.localRotation);
                         objectWriter.WriteInt(netObject.gameObject.scene.buildIndex);
@@ -474,14 +476,14 @@ namespace Netling
         /// <param name="parent">The parent transform this object will be a child of. Null for root objects.</param>
         /// <param name="position">The global position where to instantiate the object.</param>
         /// <param name="rotation">The global rotation with which to instantiate the object.</param>
-        /// <param name="actorNumber">The actor number of the owner of this object.</param>
+        /// <param name="clientID">The client ID of the owner of this object. -1 if server-owned.</param>
         /// <typeparam name="T">The type of the net behaviour component of the new object that is returned.</typeparam>
         /// <returns>The net behaviour component of the newly instantiated network object.</returns>
         /// <exception cref="InvalidOperationException">Thrown if server not running.</exception>
         public T SpawnNetObject<T>(T netBehaviourPrefab, Scene scene, Transform parent, Vector3 position,
-            Quaternion rotation, int actorNumber = ServerActorNumber) where T : NetBehaviour
+            Quaternion rotation, int clientID = ServerClientID) where T : NetBehaviour
         {
-            return SpawnNetObject(netBehaviourPrefab.NetObject, scene, parent, position, rotation, actorNumber)
+            return SpawnNetObject(netBehaviourPrefab.NetObject, scene, parent, position, rotation, clientID)
                 .GetComponent<T>();
         }
 
@@ -495,18 +497,18 @@ namespace Netling
         /// <param name="parent">The parent transform this object will be a child of. Null for root objects.</param>
         /// <param name="position">The global position where to instantiate the object.</param>
         /// <param name="rotation">The global rotation with which to instantiate the object.</param>
-        /// <param name="actorNumber">The actor number of the owner of this object.</param>
+        /// <param name="clientID">The client ID of the owner of this object. -1 if server-owned.</param>
         /// <returns></returns>
         /// <exception cref="InvalidOperationException">Thrown if server not running.</exception>
         public NetObject SpawnNetObject(NetObject netObjectPrefab, Scene scene, Transform parent, Vector3 position,
-            Quaternion rotation, int actorNumber = ServerActorNumber)
+            Quaternion rotation, int clientID = ServerClientID)
         {
             if (!IsActive)
                 throw new InvalidOperationException("Cannot spawn NetObject: Server not running");
 
             NetObject netObject =
                 NetObjectManager.Instance.SpawnOnServer(netObjectPrefab, position, rotation, scene, parent,
-                    actorNumber);
+                    clientID);
             SendSpawnMessage(new[] { netObject }, _connections);
             return netObject;
         }
@@ -668,7 +670,7 @@ namespace Netling
             }
         }
 
-        public void SendGameAction(GameAction gameAction, GameAction.IParameters parameters, int actorNumber,
+        public void SendGameAction(GameAction gameAction, GameAction.IParameters parameters, int clientID,
             float triggerTime)
         {
             if (!IsActive)
@@ -677,7 +679,7 @@ namespace Netling
             var streamWriter = new DataStreamWriter(MaxBytesPerMessage, Allocator.Temp);
             streamWriter.WriteInt(Commands.GameAction);
             streamWriter.WriteInt(GameActionManager.Instance.GetID(gameAction));
-            streamWriter.WriteInt(actorNumber);
+            streamWriter.WriteInt(clientID);
             streamWriter.WriteFloat(triggerTime);
             streamWriter.WriteBool(true); // valid
             gameAction.SerializeParameters(ref streamWriter, parameters);
@@ -685,7 +687,7 @@ namespace Netling
             SendBytes(streamWriter.AsNativeArray(), _reliablePipeline, _connections);
         }
 
-        public void DenyGameAction(GameAction gameAction, GameAction.IParameters parameters, int actorNumber,
+        public void DenyGameAction(GameAction gameAction, GameAction.IParameters parameters, int clientID,
             float triggerTime)
         {
             if (!IsActive)
@@ -694,7 +696,7 @@ namespace Netling
             var streamWriter = new DataStreamWriter(MaxBytesPerMessage, Allocator.Temp);
             streamWriter.WriteInt(Commands.GameAction);
             streamWriter.WriteInt(GameActionManager.Instance.GetID(gameAction));
-            streamWriter.WriteInt(actorNumber);
+            streamWriter.WriteInt(clientID);
             streamWriter.WriteFloat(triggerTime);
             streamWriter.WriteBool(false); // invalid
             gameAction.SerializeParameters(ref streamWriter, parameters);

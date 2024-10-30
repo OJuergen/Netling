@@ -24,16 +24,16 @@ namespace Netling.Samples
             Server.Instance.ClientDisconnected -= OnClientDisconnected;
         }
 
-        private void OnClientAccepted(int actorNumber)
+        private void OnClientAccepted(int clientID)
         {
-            if (_players.ContainsKey(actorNumber))
+            if (_players.ContainsKey(clientID))
             {
-                Debug.LogWarning($"Player with ID {actorNumber} is already connected");
+                Debug.LogWarning($"Player with ID {clientID} is already connected");
                 return;
             }
 
             Server.Instance.SpawnNetObject(_playerPrefab, default, null, Vector3.zero, Quaternion.identity,
-                actorNumber);
+                clientID);
         }
 
         private void OnClientDisconnected(int id)
@@ -49,26 +49,26 @@ namespace Netling.Samples
 
         public void Register(Player player)
         {
-            if (!_players.TryAdd(player.OwnerActorNumber, player))
+            if (!_players.TryAdd(player.OwnerClientID, player))
             {
-                Debug.LogWarning($"Player with ID {player.OwnerActorNumber} is already connected");
+                Debug.LogWarning($"Player with ID {player.OwnerClientID} is already connected");
             }
         }
 
         public void Unregister(Player player)
         {
-            if (!_players.ContainsKey(player.OwnerActorNumber))
+            if (!_players.ContainsKey(player.OwnerClientID))
             {
-                Debug.LogWarning($"Player with unknown ID {player.OwnerActorNumber} disconnected");
+                Debug.LogWarning($"Player with unknown client ID {player.OwnerClientID} disconnected");
                 return;
             }
 
-            _players.Remove(player.OwnerActorNumber);
+            _players.Remove(player.OwnerClientID);
         }
 
-        public Player Get(int actorNumber)
+        public Player Get(int clientID)
         {
-            return _players.GetValueOrDefault(actorNumber);
+            return _players.GetValueOrDefault(clientID);
         }
     }
 }
