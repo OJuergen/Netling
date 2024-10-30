@@ -222,7 +222,7 @@ namespace Netling
                 {
                     case Commands.AcknowledgeActorNumber:
                     {
-                        if (_acceptAllActors) AcceptPlayer(senderActorNumber);
+                        if (_acceptAllActors) AcceptActor(senderActorNumber);
                         break;
                     }
                     case Commands.Ping:
@@ -340,13 +340,13 @@ namespace Netling
             }
         }
 
-        public void AcceptPlayer(int actorNumber)
+        public void AcceptActor(int actorNumber)
         {
             if (!IsActive)
-                throw new InvalidOperationException("Cannot accept player: Server not running");
+                throw new InvalidOperationException("Cannot accept actor: Server not running");
 
             NetworkConnection connection = _connectionByActorNumber[actorNumber];
-            Debug.Log($"Accepting player of client {actorNumber}");
+            Debug.Log($"Accepting actor with number {actorNumber}");
             var connections = new NativeList<NetworkConnection>(1, Allocator.Temp) { connection };
             _serverDriver.BeginSend(_reliablePipeline, connection, out DataStreamWriter writer);
             writer.WriteInt(Commands.AcceptActor);
@@ -359,7 +359,7 @@ namespace Netling
         public void Kick(int actorNumber)
         {
             if (!IsActive)
-                throw new InvalidOperationException("Cannot kick player: Server not running");
+                throw new InvalidOperationException("Cannot kick client: Server not running");
 
             if (_connectionByActorNumber.TryGetValue(actorNumber, out NetworkConnection connection))
             {
@@ -379,7 +379,7 @@ namespace Netling
         public void KickAll()
         {
             if (!IsActive)
-                throw new InvalidOperationException("Cannot kick player: Server not running");
+                throw new InvalidOperationException("Cannot kick client: Server not running");
 
             foreach (NetworkConnection connection in _connections)
             {
