@@ -54,6 +54,9 @@ MonoBehaviour:
     height: 150
   _isActive: 1
   _padding: 5
-  _subSceneName: NetworkTestSub
+  _subScene:
+    _sceneAsset: {fileID: 102900000, guid: 046dc3b46eeb5c34680a401476b6d48e, type: 3}
+    _sceneName: NetworkTestSub
+    <IsValid>k__BackingField: 1
   _netObjectPrefab: {fileID: 8277013982151074781, guid: 3df8dde11dbb21f4a8c32c0a3108d2f6,
     type: 3}
