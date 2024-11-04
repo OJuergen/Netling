@@ -1,7 +1,6 @@
 using System;
 using JetBrains.Annotations;
 using Unity.Collections;
-
 using UnityEngine;
 
 namespace Netling
@@ -10,7 +9,7 @@ namespace Netling
     {
         public static void WriteBool(ref this DataStreamWriter writer, bool b)
         {
-            writer.WriteByte((byte) (b ? 1 : 0));
+            writer.WriteByte((byte)(b ? 1 : 0));
         }
 
         public static void WriteManagedString(ref this DataStreamWriter writer, [NotNull] string str)
@@ -19,7 +18,7 @@ namespace Netling
             writer.WriteInt(str.Length);
             foreach (char c in str)
             {
-                writer.WriteShort((short) c);
+                writer.WriteShort((short)c);
             }
         }
 
@@ -38,6 +37,24 @@ namespace Netling
             writer.WriteFloat(quaternion.w);
         }
 
+        public static void WriteClientID(ref this DataStreamWriter writer, ClientID clientID)
+        {
+            clientID.Serialize(ref writer);
+        }
+
+        public static void WriteNetObjectID(ref this DataStreamWriter writer, NetObjectID netObjectID)
+        {
+            netObjectID.Serialize(ref writer);
+        }
+
+        public static void WriteColor(ref this DataStreamWriter writer, Color color)
+        {
+            writer.WriteFloat(color.r);
+            writer.WriteFloat(color.g);
+            writer.WriteFloat(color.b);
+            writer.WriteFloat(color.a);
+        }
+
         public static void WriteObjects(ref this DataStreamWriter writer, object[] objects, Type[] types)
         {
             if (types.Length != objects.Length)
@@ -45,26 +62,26 @@ namespace Netling
             for (var i = 0; i < types.Length; i++)
             {
                 Type type = types[i];
-                if (type == typeof(int)) writer.WriteInt((int) objects[i]);
-                else if (type == typeof(uint)) writer.WriteUInt((uint) objects[i]);
-                else if (type == typeof(bool)) writer.WriteBool((bool) objects[i]);
-                else if (type == typeof(byte)) writer.WriteByte((byte) objects[i]);
+                if (type == typeof(int)) writer.WriteInt((int)objects[i]);
+                else if (type == typeof(uint)) writer.WriteUInt((uint)objects[i]);
+                else if (type == typeof(bool)) writer.WriteBool((bool)objects[i]);
+                else if (type == typeof(byte)) writer.WriteByte((byte)objects[i]);
                 else if (type == typeof(byte[]))
                 {
-                    writer.WriteInt(((byte[]) objects[i]).Length);
-                    var bytes = new NativeArray<byte>((byte[]) objects[i], Allocator.Temp);
+                    writer.WriteInt(((byte[])objects[i]).Length);
+                    var bytes = new NativeArray<byte>((byte[])objects[i], Allocator.Temp);
                     writer.WriteBytes(bytes);
                     bytes.Dispose();
                 }
-                else if (type == typeof(short)) writer.WriteShort((short) objects[i]);
-                else if (type == typeof(ushort)) writer.WriteUShort((ushort) objects[i]);
-                else if (type == typeof(char)) writer.WriteShort((short) objects[i]);
-                else if (type == typeof(float)) writer.WriteFloat((float) objects[i]);
-                else if (type == typeof(string)) writer.WriteManagedString((string) objects[i]);
-                else if (type == typeof(Vector3)) writer.WriteVector3((Vector3) objects[i]);
-                else if (type == typeof(Quaternion)) writer.WriteQuaternion((Quaternion) objects[i]);
+                else if (type == typeof(short)) writer.WriteShort((short)objects[i]);
+                else if (type == typeof(ushort)) writer.WriteUShort((ushort)objects[i]);
+                else if (type == typeof(char)) writer.WriteShort((short)objects[i]);
+                else if (type == typeof(float)) writer.WriteFloat((float)objects[i]);
+                else if (type == typeof(string)) writer.WriteManagedString((string)objects[i]);
+                else if (type == typeof(Vector3)) writer.WriteVector3((Vector3)objects[i]);
+                else if (type == typeof(Quaternion)) writer.WriteQuaternion((Quaternion)objects[i]);
                 else if (typeof(IStreamSerializable).IsAssignableFrom(type))
-                    ((IStreamSerializable) objects[i]).Serialize(ref writer);
+                    ((IStreamSerializable)objects[i]).Serialize(ref writer);
                 else throw new NetException($"Cannot serialize rpc argument of type {type}");
             }
         }
@@ -86,7 +103,7 @@ namespace Netling
             int length = reader.ReadInt();
             var chars = new char[length];
             for (var i = 0; i < length; i++)
-                chars[i] = (char) reader.ReadShort();
+                chars[i] = (char)reader.ReadShort();
             return new string(chars);
         }
 
@@ -105,6 +122,21 @@ namespace Netling
                 reader.ReadFloat(),
                 reader.ReadFloat(),
                 reader.ReadFloat());
+        }
+
+        public static ClientID ReadClientID(ref this DataStreamReader reader) => ClientID.Deserialize(ref reader);
+
+        public static NetObjectID ReadNetObjectID(ref this DataStreamReader reader) =>
+            NetObjectID.Deserialize(ref reader);
+
+        public static Color ReadColor(ref this DataStreamReader reader)
+        {
+            return new Color(
+                reader.ReadFloat(),
+                reader.ReadFloat(),
+                reader.ReadFloat(),
+                reader.ReadFloat()
+            );
         }
 
         public static object[] ReadObjects(ref this DataStreamReader reader, Type[] types)
@@ -126,7 +158,7 @@ namespace Netling
                 }
                 else if (type == typeof(short)) objects[i] = reader.ReadShort();
                 else if (type == typeof(ushort)) objects[i] = reader.ReadUShort();
-                else if (type == typeof(char)) objects[i] = (char) reader.ReadUShort();
+                else if (type == typeof(char)) objects[i] = (char)reader.ReadUShort();
                 else if (type == typeof(float)) objects[i] = reader.ReadFloat();
                 else if (type == typeof(string)) objects[i] = reader.ReadManagedString();
                 else if (type == typeof(Vector3)) objects[i] = reader.ReadVector3();
@@ -134,7 +166,7 @@ namespace Netling
                 else if (typeof(IStreamSerializable).IsAssignableFrom(type))
                 {
                     objects[i] = Activator.CreateInstance(type);
-                    ((IStreamSerializable) objects[i]).Deserialize(ref reader);
+                    ((IStreamSerializable)objects[i]).Deserialize(ref reader);
                 }
                 else throw new NetException($"Cannot deserialize object of type {type}");
             }
