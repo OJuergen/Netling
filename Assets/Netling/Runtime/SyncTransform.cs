@@ -56,7 +56,6 @@ namespace Netling
 
         private void Update()
         {
-
             // submit
             if (HasAuthority)
             {

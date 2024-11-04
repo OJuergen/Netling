@@ -14,7 +14,7 @@ namespace Netling
     {
         [SerializeField, NotEditable, Tooltip("ID of this NetworkBehaviour as a component of a NetObject. "
                                               + "Is assigned by the NetObject.")]
-        private ushort _netBehaviourID;
+        private ushort _netBehaviourIndex;
 
         [SerializeField, Tooltip("Determines whether the owner of this NetObject, or only the server "
                                  + "has the authority to change synchronized fields on this NetworkBehaviour")]
@@ -23,7 +23,7 @@ namespace Netling
         /// <summary>
         /// Identifier for this behaviour on a specific <see cref="NetObject"/>.
         /// </summary>
-        public ushort NetBehaviourID { get => _netBehaviourID; set => _netBehaviourID = value; }
+        public ushort NetBehaviourIndex { get => _netBehaviourIndex; set => _netBehaviourIndex = value; }
 
         /// <summary>
         /// True, if owning client has authority over the state of this behaviour.
@@ -65,7 +65,7 @@ namespace Netling
         /// <summary>
         /// The client ID of the owning client.
         /// </summary>
-        public int OwnerClientID => NetObject.OwnerClientID;
+        public ClientID OwnerClientID => NetObject.OwnerClientID;
 
         private byte _dirtyMask = 255;
         private bool _authorityDirty; // client-authority flag needs sync
@@ -95,6 +95,7 @@ namespace Netling
             Server.AssertActive();
             _authorityOverride = true;
         }
+        #region Serialization
 
         /// <summary>
         /// Write dirty data to <paramref name="writer"/>.
@@ -204,5 +205,7 @@ namespace Netling
         {
             return (dirtyMask & (1 << bitPosition)) == 1 << bitPosition;
         }
+        
+        #endregion
     }
 }

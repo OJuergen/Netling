@@ -17,7 +17,7 @@ namespace Netling
         private static Server _instance;
         public static Server Instance => _instance ??= new Server();
 
-        public const int ServerClientID = -1;
+        public static ClientID ServerClientID => ClientID.Server;
         private const int MaxBytesPerMessage = 1300; // 1400 causes errors on receiving side
 
         public static float Time =>
@@ -30,12 +30,12 @@ namespace Netling
         private NativeList<NetworkConnection> _connections;
         private float _connectionTimeout;
 
-        private readonly Dictionary<NetworkConnection, int> _clientIDByConnection = new();
-        private readonly Dictionary<int, NetworkConnection> _connectionByClientID = new();
-        private readonly HashSet<int> _acceptedClients = new();
+        private readonly Dictionary<NetworkConnection, ClientID> _clientIDByConnection = new();
+        private readonly Dictionary<ClientID, NetworkConnection> _connectionByClientID = new();
+        private readonly HashSet<ClientID> _acceptedClients = new();
         private readonly Dictionary<NetworkConnection, float> _lastPingTimes = new();
-        private int _nextClientID;
-        public int[] AcceptedClients => _acceptedClients.ToArray();
+        private ClientID _nextClientID;
+        public ClientID[] AcceptedClients => _acceptedClients.ToArray();
 
         private NetworkEndpoint _endPoint;
         private NetworkPipeline _unreliablePipeline;
@@ -44,7 +44,7 @@ namespace Netling
         private bool _useSimulationPipeline;
         private ushort[] _ports;
 
-        public delegate void ConnectionDelegate(int clientID);
+        public delegate void ConnectionDelegate(ClientID clientID);
 
         public event Action Started;
         public event Action Stopped;
@@ -60,6 +60,8 @@ namespace Netling
             _acceptAllClients = acceptAllClients;
             _useSimulationPipeline = useSimulationPipeline;
             _initialized = true;
+            _nextClientID = ClientID.Create(2);
+            NetObjectManager.Instance.Init();
         }
 
         public void Start(bool quitOnFail = false)
@@ -119,7 +121,7 @@ namespace Netling
                 _clientIDByConnection.Clear();
                 _connectionByClientID.Clear();
                 _acceptedClients.Clear();
-                _nextClientID = 0;
+                _nextClientID = ClientID.Create(2);
                 _lastPingTimes.Clear();
                 if (quitOnFail) Application.Quit(-1);
                 throw new NetException("Failed to bind to any port");
@@ -164,7 +166,7 @@ namespace Netling
                     break;
                 }
 
-                int clientID = _nextClientID++;
+                ClientID clientID = _nextClientID++;
                 _connections.Add(connection);
                 _clientIDByConnection[connection] = clientID;
                 _connectionByClientID[clientID] = connection;
@@ -172,7 +174,7 @@ namespace Netling
                 Debug.Log($"Client connected. Assigning ID {clientID}.");
                 _serverDriver.BeginSend(_reliablePipeline, connection, out DataStreamWriter writer);
                 writer.WriteInt(Commands.AssignClientID);
-                writer.WriteInt(clientID);
+                writer.WriteInt(clientID.Value);
                 _serverDriver.EndSend(writer);
                 ClientConnected?.Invoke(clientID);
             }
@@ -182,7 +184,7 @@ namespace Netling
             {
                 // check for timeout
                 NetworkConnection connection = _connections[i];
-                int clientID = _clientIDByConnection[connection];
+                ClientID clientID = _clientIDByConnection[connection];
                 if (_connectionTimeout > 0 && Time - _lastPingTimes[connection] > _connectionTimeout)
                 {
                     connection.Disconnect(_serverDriver);
@@ -223,7 +225,7 @@ namespace Netling
         {
             try
             {
-                int senderClientID = _clientIDByConnection[connection];
+                ClientID senderClientID = _clientIDByConnection[connection];
                 int command = streamReader.ReadInt();
                 switch (command)
                 {
@@ -254,7 +256,7 @@ namespace Netling
                         int objectsInMessage = streamReader.ReadInt();
                         for (var obj = 0; obj < objectsInMessage; obj++)
                         {
-                            int netObjID = streamReader.ReadInt();
+                            var netObjID = new NetObjectID(streamReader.ReadInt());
                             int size = streamReader.ReadInt();
                             NetObject netObject = NetObjectManager.Instance.Exists(netObjID)
                                 ? NetObjectManager.Instance.Get(netObjID)
@@ -288,7 +290,7 @@ namespace Netling
                     case Commands.GameAction:
                     {
                         int gameActionID = streamReader.ReadInt();
-                        int clientID = streamReader.ReadInt();
+                        var clientID = ClientID.Create(streamReader.ReadInt());
                         float triggerTime = streamReader.ReadFloat();
                         try
                         {
@@ -319,7 +321,7 @@ namespace Netling
                     case Commands.NetObjectRPC:
                     {
                         float sentServerTime = streamReader.ReadFloat();
-                        int netObjectID = streamReader.ReadInt();
+                        var netObjectID = new NetObjectID(streamReader.ReadInt());
                         if (!NetObjectManager.Instance.Exists(netObjectID))
                         {
                             Debug.LogWarning("Ignoring received RPC, because NetObject was not found.");
@@ -327,8 +329,8 @@ namespace Netling
                         }
 
                         NetObject netObject = NetObjectManager.Instance.Get(netObjectID);
-                        ushort netBehaviourID = streamReader.ReadUShort();
-                        NetBehaviour netBehaviour = netObject.Get(netBehaviourID);
+                        ushort netBehaviourIndex = streamReader.ReadUShort();
+                        NetBehaviour netBehaviour = netObject.Get(netBehaviourIndex);
                         NetObjectManager.RPC rpc =
                             NetObjectManager.Instance.DeserializeRPC(ref streamReader, netBehaviour);
                         var messageInfo = new MessageInfo
@@ -347,7 +349,7 @@ namespace Netling
             }
         }
 
-        public void AcceptClient(int clientID)
+        public void AcceptClient(ClientID clientID)
         {
             if (!IsActive)
                 throw new InvalidOperationException("Cannot accept client: Server not running");
@@ -364,7 +366,7 @@ namespace Netling
             ClientAccepted?.Invoke(clientID);
         }
 
-        public void Kick(int clientID)
+        public void Kick(ClientID clientID)
         {
             if (!IsActive)
                 throw new InvalidOperationException("Cannot kick client: Server not running");
@@ -390,7 +392,7 @@ namespace Netling
             if (!IsActive)
                 throw new InvalidOperationException("Cannot kick client: Server not running");
 
-            int[] clientIDs = _clientIDByConnection.Values.ToArray();
+            ClientID[] clientIDs = _clientIDByConnection.Values.ToArray();
             foreach (NetworkConnection connection in _connections)
             {
                 connection.Disconnect(_serverDriver);
@@ -402,11 +404,13 @@ namespace Netling
             _acceptedClients.Clear();
             _lastPingTimes.Clear();
 
-            foreach (int clientID in clientIDs)
+            foreach (ClientID clientID in clientIDs)
             {
                 ClientDisconnected?.Invoke(clientID);
             }
         }
+
+        public void SendSpawnMessage(params NetObject[] netObjects) => SendSpawnMessage(netObjects, _connections);
 
         private void SendSpawnMessage(NetObject[] netObjects, NativeList<NetworkConnection> connections)
         {
@@ -441,9 +445,9 @@ namespace Netling
                     if (objectIndex < netObjects.Length)
                     {
                         NetObject netObject = netObjects[objectIndex++];
-                        objectWriter.WriteInt(netObject.ID);
+                        objectWriter.WriteInt(netObject.ID.Value);
                         objectWriter.WriteUShort(netObject.PrefabIndex);
-                        objectWriter.WriteInt(netObject.OwnerClientID);
+                        objectWriter.WriteInt(netObject.OwnerClientID.Value);
                         objectWriter.WriteVector3(netObject.transform.localPosition);
                         objectWriter.WriteQuaternion(netObject.transform.localRotation);
                         objectWriter.WriteInt(netObject.gameObject.scene.buildIndex);
@@ -467,7 +471,7 @@ namespace Netling
         }
 
         /// <summary>
-        /// Spawn a new networked object with a specific network behaviour component on the server.
+        /// Spawn a new networked object with a specific network behaviour component on the server, owned by the server.
         /// Sends a spawn message to all clients.
         /// Returns the component of the newly created network object.
         /// </summary>
@@ -476,23 +480,56 @@ namespace Netling
         /// <param name="parent">The parent transform this object will be a child of. Null for root objects.</param>
         /// <param name="position">The global position where to instantiate the object.</param>
         /// <param name="rotation">The global rotation with which to instantiate the object.</param>
-        /// <param name="clientID">The client ID of the owner of this object. -1 if server-owned.</param>
         /// <typeparam name="T">The type of the net behaviour component of the new object that is returned.</typeparam>
         /// <returns>The net behaviour component of the newly instantiated network object.</returns>
         /// <exception cref="InvalidOperationException">Thrown if server not running.</exception>
         public T SpawnNetObject<T>(T netBehaviourPrefab, Scene scene, Transform parent, Vector3 position,
-            Quaternion rotation, int clientID = ServerClientID) where T : NetBehaviour
-        {
-            return SpawnNetObject(netBehaviourPrefab.NetObject, scene, parent, position, rotation, clientID)
+            Quaternion rotation) where T : NetBehaviour =>
+            SpawnNetObject(netBehaviourPrefab.NetObject, scene, parent, position, rotation, ClientID.Server)
                 .GetComponent<T>();
+
+        /// <summary>
+        /// Spawn a new networked object with a specific network behaviour component on the server.
+        /// Sends a spawn message to all clients.
+        /// Returns the component of the newly created network object.
+        /// </summary>
+        /// <param name="prefab">The NetBehaviour prefab to instantiate</param>
+        /// <param name="scene">The scene where the object will be moved to. Ignored if parent is set.</param>
+        /// <param name="parent">The parent transform this object will be a child of. Null for root objects.</param>
+        /// <param name="position">The global position where to instantiate the object.</param>
+        /// <param name="rotation">The global rotation with which to instantiate the object.</param>
+        /// <param name="clientID">The client ID of the owner of this object. -1 if server-owned.</param>
+        /// <typeparam name="T">The type of the net behaviour component of the new object that is returned.</typeparam>
+        /// <returns>The net behaviour component of the newly instantiated network object.</returns>
+        /// <exception cref="InvalidOperationException">Thrown if server not running.</exception>
+        public T SpawnNetObject<T>(T prefab, Scene scene, Transform parent, Vector3 position,
+            Quaternion rotation, ClientID clientID) where T : NetBehaviour
+        {
+            if (!IsActive) throw new InvalidOperationException("Cannot spawn NetObject: Server not running");
+            return NetObjectManager.Instance.SpawnOnServer(prefab, position, rotation, scene, parent, clientID);
         }
+
+        /// <summary>
+        /// Spawn a new networked object on the server, owned by the server.
+        /// Sends a spawn message to all clients.
+        /// Returns the newly created network object.
+        /// </summary>
+        /// <param name="prefab"></param>
+        /// <param name="scene">The scene where the object will be moved to. Ignored if parent is set.</param>
+        /// <param name="parent">The parent transform this object will be a child of. Null for root objects.</param>
+        /// <param name="position">The global position where to instantiate the object.</param>
+        /// <param name="rotation">The global rotation with which to instantiate the object.</param>
+        /// <returns></returns>
+        /// <exception cref="InvalidOperationException">Thrown if server not running.</exception>
+        public NetObject SpawnNetObject(NetObject prefab, Scene scene, Transform parent, Vector3 position,
+            Quaternion rotation) => SpawnNetObject(prefab, scene, parent, position, rotation, ClientID.Server);
 
         /// <summary>
         /// Spawn a new networked object on the server.
         /// Sends a spawn message to all clients.
         /// Returns the newly created network object.
         /// </summary>
-        /// <param name="netObjectPrefab"></param>
+        /// <param name="prefab">The NetObject prefab to instantiate.</param>
         /// <param name="scene">The scene where the object will be moved to. Ignored if parent is set.</param>
         /// <param name="parent">The parent transform this object will be a child of. Null for root objects.</param>
         /// <param name="position">The global position where to instantiate the object.</param>
@@ -500,17 +537,11 @@ namespace Netling
         /// <param name="clientID">The client ID of the owner of this object. -1 if server-owned.</param>
         /// <returns></returns>
         /// <exception cref="InvalidOperationException">Thrown if server not running.</exception>
-        public NetObject SpawnNetObject(NetObject netObjectPrefab, Scene scene, Transform parent, Vector3 position,
-            Quaternion rotation, int clientID = ServerClientID)
+        public NetObject SpawnNetObject(NetObject prefab, Scene scene, Transform parent, Vector3 position,
+            Quaternion rotation, ClientID clientID)
         {
-            if (!IsActive)
-                throw new InvalidOperationException("Cannot spawn NetObject: Server not running");
-
-            NetObject netObject =
-                NetObjectManager.Instance.SpawnOnServer(netObjectPrefab, position, rotation, scene, parent,
-                    clientID);
-            SendSpawnMessage(new[] { netObject }, _connections);
-            return netObject;
+            if (!IsActive) throw new InvalidOperationException("Cannot spawn NetObject: Server not running");
+            return NetObjectManager.Instance.SpawnOnServer(prefab, position, rotation, scene, parent, clientID);
         }
 
         public void SendNetAssetUpdate(bool fullLoad)
@@ -633,7 +664,7 @@ namespace Netling
 
         private static void WriteNetObject(NetObject netObject, ref DataStreamWriter streamWriter)
         {
-            streamWriter.WriteInt(netObject.ID);
+            streamWriter.WriteInt(netObject.ID.Value);
             DataStreamWriter sizeWriter = streamWriter;
             streamWriter.WriteInt(0);
             int length = streamWriter.Length;
@@ -663,14 +694,14 @@ namespace Netling
                 streamWriter.WriteInt(netObjects.Length);
                 foreach (NetObject netObject in netObjects)
                 {
-                    streamWriter.WriteInt(netObject.ID);
+                    netObject.ID.Serialize(ref streamWriter);
                 }
 
                 SendBytes(streamWriter.AsNativeArray(), _reliablePipeline, _connections);
             }
         }
 
-        public void SendGameAction(GameAction gameAction, GameAction.IParameters parameters, int clientID,
+        public void SendGameAction(GameAction gameAction, GameAction.IParameters parameters, ClientID clientID,
             float triggerTime)
         {
             if (!IsActive)
@@ -679,7 +710,7 @@ namespace Netling
             var streamWriter = new DataStreamWriter(MaxBytesPerMessage, Allocator.Temp);
             streamWriter.WriteInt(Commands.GameAction);
             streamWriter.WriteInt(GameActionManager.Instance.GetID(gameAction));
-            streamWriter.WriteInt(clientID);
+            streamWriter.WriteInt(clientID.Value);
             streamWriter.WriteFloat(triggerTime);
             streamWriter.WriteBool(true); // valid
             gameAction.SerializeParameters(ref streamWriter, parameters);
@@ -687,7 +718,7 @@ namespace Netling
             SendBytes(streamWriter.AsNativeArray(), _reliablePipeline, _connections);
         }
 
-        public void DenyGameAction(GameAction gameAction, GameAction.IParameters parameters, int clientID,
+        public void DenyGameAction(GameAction gameAction, GameAction.IParameters parameters, ClientID clientID,
             float triggerTime)
         {
             if (!IsActive)
@@ -696,7 +727,7 @@ namespace Netling
             var streamWriter = new DataStreamWriter(MaxBytesPerMessage, Allocator.Temp);
             streamWriter.WriteInt(Commands.GameAction);
             streamWriter.WriteInt(GameActionManager.Instance.GetID(gameAction));
-            streamWriter.WriteInt(clientID);
+            streamWriter.WriteInt(clientID.Value);
             streamWriter.WriteFloat(triggerTime);
             streamWriter.WriteBool(false); // invalid
             gameAction.SerializeParameters(ref streamWriter, parameters);
@@ -727,8 +758,8 @@ namespace Netling
             {
                 streamWriter.WriteInt(Commands.NetObjectRPC);
                 streamWriter.WriteFloat(Time);
-                streamWriter.WriteInt(netBehaviour.NetObject.ID);
-                streamWriter.WriteUShort(netBehaviour.NetBehaviourID);
+                netBehaviour.NetObject.ID.Serialize(ref streamWriter);
+                streamWriter.WriteUShort(netBehaviour.NetBehaviourIndex);
                 NetObjectManager.Instance.SerializeRPC(ref streamWriter, netBehaviour, methodName, args);
 
                 SendBytes(streamWriter.AsNativeArray(), _reliablePipeline, _connections);

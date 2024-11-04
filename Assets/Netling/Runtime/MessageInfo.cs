@@ -3,7 +3,7 @@ namespace Netling
     public struct MessageInfo
     {
         public float SentServerTime { get; set; }
-        public int SenderClientID { get; set; }
+        public ClientID SenderClientID { get; set; }
 
         public static MessageInfo ServerNow => new MessageInfo
         {

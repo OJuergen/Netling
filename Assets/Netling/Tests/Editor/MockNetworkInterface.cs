@@ -1,8 +1,7 @@
-using System;
 using Unity.Jobs;
 using Unity.Networking.Transport;
 
-namespace Netling.Tests
+namespace Netling.Editor.Tests
 {
     /// <summary>
     /// See https://docs.unity3d.com/Packages/com.unity.transport@2.2/api/Unity.Networking.Transport.INetworkInterface.html

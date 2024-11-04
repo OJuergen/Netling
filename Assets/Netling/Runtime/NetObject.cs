@@ -3,18 +3,18 @@ using MufflonUtil;
 using Unity.Collections;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace Netling
 {
     public sealed class NetObject : MonoBehaviour
     {
         [SerializeField, NotEditable] private NetBehaviour[] _netBehaviours;
-        private int _ownerClientID = Server.ServerClientID;
+        private ClientID _ownerClientID = Server.ServerClientID;
         public bool IsInitialized { get; private set; }
 
-        private int _id;
-        public int ID
+        private NetObjectID _id;
+
+        public NetObjectID ID
         {
             get
             {
@@ -26,6 +26,7 @@ namespace Netling
         }
 
         private ushort _prefabIndex;
+
         public ushort PrefabIndex
         {
             get
@@ -37,7 +38,7 @@ namespace Netling
             private set => _prefabIndex = value;
         }
 
-        public int OwnerClientID
+        public ClientID OwnerClientID
         {
             get
             {
@@ -49,8 +50,10 @@ namespace Netling
         }
 
         public bool IsDirty { get; private set; }
+
         public bool IsMine => OwnerClientID == Client.Instance.ID
                               || Server.IsActive && OwnerClientID == Server.ServerClientID;
+
         public NetBehaviour[] NetBehaviours => _netBehaviours;
 
         private void OnValidate()
@@ -58,7 +61,7 @@ namespace Netling
             AssignIDs();
         }
 
-        private void Init(int id, ushort prefabIndex, int ownerClientID)
+        internal void Init(NetObjectID id, ushort prefabIndex, ClientID ownerClientID)
         {
             ID = id;
             PrefabIndex = prefabIndex;
@@ -69,12 +72,7 @@ namespace Netling
         private void OnDestroy()
         {
             if (Server.IsActive && IsInitialized) Server.Instance.UnspawnNetObject(this);
-            if(Client.Instance.IsConnected && IsInitialized) NetObjectManager.Instance.Unspawn(ID);
-        }
-
-        public void SetDirty()
-        {
-            IsDirty = true;
+            if (Client.Instance.IsConnected && IsInitialized) NetObjectManager.Instance.Unspawn(ID);
         }
 
         public void AssignIDs()
@@ -82,27 +80,19 @@ namespace Netling
             _netBehaviours = GetComponentsInChildren<NetBehaviour>();
             for (ushort i = 0; i < _netBehaviours.Length; i++)
             {
-                if (_netBehaviours[i].NetBehaviourID == i) continue;
-                _netBehaviours[i].NetBehaviourID = i;
+                if (_netBehaviours[i].NetBehaviourIndex == i) continue;
+                _netBehaviours[i].NetBehaviourIndex = i;
 #if UNITY_EDITOR
                 EditorUtility.SetDirty(this);
 #endif
             }
         }
 
-        public NetBehaviour Get(ushort netBehaviourID)
+        public NetBehaviour Get(ushort netBehaviourIndex)
         {
-            if (netBehaviourID >= _netBehaviours.Length)
-                throw new ArgumentException($"No net behaviour with index {netBehaviourID} found");
-            return _netBehaviours[netBehaviourID];
-        }
-
-        public NetObject Create(int id, ushort prefabIndex, Scene scene, Transform parent, Vector3 position, Quaternion rotation, int ownerClientID)
-        {
-            NetObject netObject = Instantiate(this, position, rotation, parent);
-            if(parent == null && scene.isLoaded) SceneManager.MoveGameObjectToScene(netObject.gameObject, scene);
-            netObject.Init(id, prefabIndex, ownerClientID);
-            return netObject;
+            if (netBehaviourIndex >= _netBehaviours.Length)
+                throw new ArgumentException($"No net behaviour with index {netBehaviourIndex} found");
+            return _netBehaviours[netBehaviourIndex];
         }
 
         #region Serialization
@@ -114,7 +104,7 @@ namespace Netling
 
         public void Serialize(ref DataStreamWriter writer, bool fullLoad, Predicate<NetBehaviour> behaviourFilter)
         {
-            var behaviourCount = (ushort) 0;
+            var behaviourCount = (ushort)0;
             DataStreamWriter behaviourCountWriter = writer;
             writer.WriteUShort(0);
             if (!fullLoad && !IsDirty) return;
@@ -124,14 +114,14 @@ namespace Netling
                 if (!behaviourFilter(networkBehaviour)) continue;
                 if (!fullLoad && !networkBehaviour.IsDirty()) continue;
                 behaviourCount++;
-                writer.WriteUShort(networkBehaviour.NetBehaviourID);
+                writer.WriteUShort(networkBehaviour.NetBehaviourIndex);
                 if (Server.IsActive)
                     writer.WriteBool(networkBehaviour.ClientAuthoritative); // can be true due to override
                 DataStreamWriter sizeWriter = writer;
                 writer.WriteUShort(0);
                 int length = writer.Length;
                 networkBehaviour.Serialize(ref writer, fullLoad);
-                sizeWriter.WriteUShort((ushort) (writer.Length - length));
+                sizeWriter.WriteUShort((ushort)(writer.Length - length));
             }
 
             behaviourCountWriter.WriteUShort(behaviourCount);
@@ -153,6 +143,11 @@ namespace Netling
                 else
                     reader.DiscardBytes(size);
             }
+        }
+        
+        public void SetDirty()
+        {
+            IsDirty = true;
         }
 
         #endregion

@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Linq;
 using MufflonUtil;
-using NSubstitute;
 using NUnit.Framework;
 using Unity.Networking.Transport;
 using UnityEditor;
+using UnityEngine;
+using Object = UnityEngine.Object;
 
-namespace Netling.Tests
+namespace Netling.Editor.Tests
 {
     public class ServerTest
     {
@@ -117,6 +118,22 @@ namespace Netling.Tests
         public void ShouldNotStartUninitializedServer()
         {
             Assert.Throws<InvalidOperationException>(() => Server.Instance.Start());
+        }
+
+        [Test]
+        public void ShouldCreateNetObject()
+        {
+            var networkInterface = new MockNetworkInterface();
+            Server.Instance.Init(new ushort[] {9099}, 100, true, false);
+            var serverDriver = NetworkDriver.Create(networkInterface);
+            Server.Instance.Start(serverDriver);
+            NetObject[] netObjectPrefabs = NetObjectManager.Instance.NetObjectPrefabs;
+            NetObject netObject = Server.Instance.SpawnNetObject(netObjectPrefabs[1], default, null, Vector3.zero, Quaternion.identity);
+            Assert.NotNull(netObject);
+            Assert.AreEqual(0, netObject.ID);
+            Assert.AreEqual(1, netObject.PrefabIndex);
+            Assert.AreEqual(ClientID.Server, netObject.OwnerClientID);
+            Object.DestroyImmediate(netObject.gameObject);
         }
     }
 }

@@ -8,7 +8,7 @@ namespace Netling.Samples
     {
         private static PlayerManager _instance;
         [NotNull] public static PlayerManager Instance => _instance ??= new PlayerManager();
-        private readonly Dictionary<int, Player> _players = new();
+        private readonly Dictionary<ClientID, Player> _players = new();
         private Player _playerPrefab;
 
         public void Init([NotNull] Player playerPrefab)
@@ -24,7 +24,7 @@ namespace Netling.Samples
             Server.Instance.ClientDisconnected -= OnClientDisconnected;
         }
 
-        private void OnClientAccepted(int clientID)
+        private void OnClientAccepted(ClientID clientID)
         {
             if (_players.ContainsKey(clientID))
             {
@@ -36,7 +36,7 @@ namespace Netling.Samples
                 clientID);
         }
 
-        private void OnClientDisconnected(int id)
+        private void OnClientDisconnected(ClientID id)
         {
             if (!_players.TryGetValue(id, out Player player))
             {
@@ -66,7 +66,7 @@ namespace Netling.Samples
             _players.Remove(player.OwnerClientID);
         }
 
-        public Player Get(int clientID)
+        public Player Get(ClientID clientID)
         {
             return _players.GetValueOrDefault(clientID);
         }

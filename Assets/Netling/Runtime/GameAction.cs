@@ -15,9 +15,9 @@ namespace Netling
         public abstract void SerializeParameters(ref DataStreamWriter writer, IParameters parameters);
         public abstract IParameters DeserializeParameters(ref DataStreamReader reader);
 
-        public abstract void ReceiveOnClient(IParameters parameters, bool valid, int clientID, float triggerTime);
+        public abstract void ReceiveOnClient(IParameters parameters, bool valid, ClientID clientID, float triggerTime);
 
-        public abstract void ReceiveOnServer(IParameters parameters, int clientID, int senderClientID,
+        public abstract void ReceiveOnServer(IParameters parameters, ClientID clientID, ClientID senderClientID,
             float triggerTime);
     }
 
@@ -43,20 +43,20 @@ namespace Netling
         {
             if (Server.IsActive)
             {
-                int clientID = Client.Instance.IsHost ? Client.Instance.ID : Server.ServerClientID;
+                ClientID clientID = Client.Instance.IsHost ? Client.Instance.ID : Server.ServerClientID;
                 TriggerOnServer(parameters, clientID);
             }
             else
                 TriggerOnClient(parameters);
         }
 
-        protected void Trigger(T parameters, int clientID)
+        protected void Trigger(T parameters, ClientID clientID)
         {
             if (Server.IsActive) TriggerOnServer(parameters, clientID);
             else TriggerOnClient(parameters);
         }
 
-        private void TriggerOnServer(T parameters, int clientID)
+        private void TriggerOnServer(T parameters, ClientID clientID)
         {
             Server.AssertActive();
             if (IsValid(parameters, clientID, Server.Time))
@@ -82,7 +82,7 @@ namespace Netling
             else Deny(parameters, Client.Instance.ID, Server.Time);
         }
 
-        public override void ReceiveOnClient(IParameters parameters, bool valid, int clientID, float triggerTime)
+        public override void ReceiveOnClient(IParameters parameters, bool valid, ClientID clientID, float triggerTime)
         {
             if (!(parameters is T tParameter))
                 throw new ArgumentException(
@@ -100,7 +100,7 @@ namespace Netling
             }
         }
 
-        public override void ReceiveOnServer(IParameters parameters, int clientID, int senderClientID,
+        public override void ReceiveOnServer(IParameters parameters, ClientID clientID, ClientID senderClientID,
             float triggerTime)
         {
             if (!(parameters is T tParameter))
@@ -124,9 +124,9 @@ namespace Netling
             else Server.Instance.DenyGameAction(this, parameters, senderClientID, triggerTime);
         }
 
-        protected abstract bool IsValid(T parameters, int clientID, float triggerTime);
-        protected abstract void Execute(T parameters, int clientID, float triggerTime);
-        protected abstract void Deny(T parameters, int clientID, float triggerTime);
-        protected abstract void Rollback(T parameters, int clientID, float triggerTime);
+        protected abstract bool IsValid(T parameters, ClientID clientID, float triggerTime);
+        protected abstract void Execute(T parameters, ClientID clientID, float triggerTime);
+        protected abstract void Deny(T parameters, ClientID clientID, float triggerTime);
+        protected abstract void Rollback(T parameters, ClientID clientID, float triggerTime);
     }
 }

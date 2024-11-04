@@ -18,8 +18,9 @@ namespace Netling
         private int _objectCount;
 
         [SerializeField] private List<NetObject> _netObjectPrefabs;
-        private readonly Dictionary<int, NetObject> _objectsById = new();
-        private int _nextId;
+        public NetObject[] NetObjectPrefabs => _netObjectPrefabs.ToArray();
+        private readonly Dictionary<NetObjectID, NetObject> _objectsById = new();
+        private NetObjectID _nextId;
 
         public NetObject[] NetObjects => _objectsById.Values.ToArray();
 
@@ -31,14 +32,15 @@ namespace Netling
 
         [SerializeField, NotEditable] private List<RPCInfo> _rpcInfo = new();
 
-        private readonly Dictionary<(ushort prefabIndex, ushort netBehaviourID, ushort methodIndex), RPCDelegate>
+        private readonly Dictionary<(ushort PrefabIndex, ushort NetBehaviourIndex, ushort MethodIndex), RPCDelegate>
             _rpcDelegates = new();
 
-        private readonly Dictionary<(ushort prefabIndex, ushort netBehaviourID, ushort methodIndex), Type[]>
+        private readonly Dictionary<(ushort PrefabIndex, ushort NetBehaviourIndex, ushort MethodIndex), Type[]>
             _argumentTypes = new();
 
-        private readonly Dictionary<(ushort prefabIndex, ushort netBehaviourID, string methodName),
-            (ushort prefabIndex, ushort netBehaviourID, ushort methodIndex)> _rpcNameToID = new();
+        private readonly
+            Dictionary<(ushort PrefabIndex, ushort NetBehaviourIndex, string methodName), (ushort prefabIndex, ushort
+                netBehaviourIndex, ushort methodIndex)> _rpcNameToID = new();
 
         public event NetObjectDelegate NetObjectAdded;
         public event NetObjectDelegate NetObjectRemoved;
@@ -59,8 +61,8 @@ namespace Netling
                 int prefabIndexY = Instance._netObjectPrefabs.IndexOf(y.Prefab);
                 if (prefabIndexX > prefabIndexY) return 1;
                 if (prefabIndexX < prefabIndexY) return -1;
-                if (x.NetBehaviour.NetBehaviourID > y.NetBehaviour.NetBehaviourID) return 1;
-                if (x.NetBehaviour.NetBehaviourID < y.NetBehaviour.NetBehaviourID) return -1;
+                if (x.NetBehaviour.NetBehaviourIndex > y.NetBehaviour.NetBehaviourIndex) return 1;
+                if (x.NetBehaviour.NetBehaviourIndex < y.NetBehaviour.NetBehaviourIndex) return -1;
                 return StringComparer.InvariantCulture.Compare(x.MethodName, y.MethodName);
             }
         }
@@ -109,12 +111,9 @@ namespace Netling
         private new void OnEnable()
         {
             base.OnEnable();
-            _objectsById.Clear();
-            _objectCount = 0;
-            _nextId = 0;
+            Init();
             Client.Instance.StateChanged += OnClientStateChanged;
             Server.Instance.ClientDisconnected += OnClientDisconnected;
-            PrepareRPCDelegates();
 #if UNITY_EDITOR
             AssetPostProcessor.ImportedPrefab += OnImportedPrefab;
             AssetPostProcessor.DeletedAsset += OnDeletedAsset;
@@ -130,6 +129,14 @@ namespace Netling
             AssetPostProcessor.ImportedPrefab -= OnImportedPrefab;
             AssetPostProcessor.DeletedAsset -= OnDeletedAsset;
 #endif
+        }
+
+        public void Init()
+        {
+            _objectsById.Clear();
+            _objectCount = 0;
+            _nextId = new NetObjectID(0);
+            PrepareRPCDelegates();
         }
 
 #if UNITY_EDITOR
@@ -167,8 +174,8 @@ namespace Netling
 
         private Type[] GetBaseTypes(Type type)
         {
-            if (type == null) return new Type[0];
-            var types = new[] { type };
+            if (type == null) return Type.EmptyTypes;
+            Type[] types = { type };
             if (type.BaseType == null) return types;
             Type t = type;
             while (t.BaseType != null)
@@ -209,15 +216,15 @@ namespace Netling
                             MethodName = rpcMethodInfo.Name
                         };
                         var methodIndex = (ushort)_rpcInfo.IndexOf(rpcInfo);
-                        (ushort PrefabIndex, ushort NetBehaviourID, ushort MethodIndex) rpcID =
-                            (prefabIndex, netBehaviour.NetBehaviourID, methodIndex);
+                        (ushort PrefabIndex, ushort NetBehaviourIndex, ushort MethodIndex) rpcID =
+                            (prefabIndex, netBehaviour.NetBehaviourIndex, methodIndex);
                         ParameterInfo[] parameterInfos = rpcMethodInfo.GetParameters();
                         _rpcDelegates[rpcID] = GetRPCDelegate(rpcMethodInfo);
                         _argumentTypes[rpcID] = parameterInfos
                             .Select(p => p.ParameterType)
                             .Where(type => type != typeof(MessageInfo))
                             .ToArray();
-                        _rpcNameToID[(prefabIndex, netBehaviour.NetBehaviourID, rpcMethodInfo.Name)] = rpcID;
+                        _rpcNameToID[(prefabIndex, netBehaviour.NetBehaviourIndex, rpcMethodInfo.Name)] = rpcID;
                     }
                 }
             }
@@ -226,9 +233,9 @@ namespace Netling
         public void SerializeRPC(ref DataStreamWriter writer, NetBehaviour netBehaviour, string methodName,
             params object[] args)
         {
-            (ushort PrefabIndex, ushort NetBehaviourID, string methodName) rpcName =
-                (netBehaviour.NetObject.PrefabIndex, netBehaviour.NetBehaviourID, methodName);
-            (ushort PrefabIndex, ushort NetBehaviourID, ushort MethodIndex) rpcID = _rpcNameToID[rpcName];
+            (ushort PrefabIndex, ushort NetBehaviourIndex, string methodName) rpcName =
+                (netBehaviour.NetObject.PrefabIndex, netBehaviour.NetBehaviourIndex, methodName);
+            (ushort PrefabIndex, ushort NetBehaviourIndex, ushort MethodIndex) rpcID = _rpcNameToID[rpcName];
             Type[] argumentTypes = _argumentTypes[rpcID];
 
             writer.WriteUShort(rpcID.MethodIndex);
@@ -238,18 +245,18 @@ namespace Netling
         public RPC DeserializeRPC(ref DataStreamReader reader, NetBehaviour netBehaviour)
         {
             ushort methodIndex = reader.ReadUShort();
-            (ushort PrefabIndex, ushort NetBehaviourID, ushort MethodIndex) rpcid =
-                (netBehaviour.NetObject.PrefabIndex, netBehaviour.NetBehaviourID, methodIndex);
+            (ushort PrefabIndex, ushort NetBehaviourIndex, ushort MethodIndex) rpcID =
+                (netBehaviour.NetObject.PrefabIndex, netBehaviour.NetBehaviourIndex, methodIndex);
 
-            if (!_argumentTypes.TryGetValue(rpcid, out Type[] argumentTypes))
-                throw new NetException($"Cannot deserialize rpc with index {rpcid}");
+            if (!_argumentTypes.TryGetValue(rpcID, out Type[] argumentTypes))
+                throw new NetException($"Cannot deserialize rpc with index {rpcID}");
 
             object[] arguments = reader.ReadObjects(argumentTypes);
 
-            return messageInfo => _rpcDelegates[rpcid].Invoke(netBehaviour, messageInfo, arguments);
+            return messageInfo => _rpcDelegates[rpcID].Invoke(netBehaviour, messageInfo, arguments);
         }
 
-        private void OnClientDisconnected(int clientID)
+        private void OnClientDisconnected(ClientID clientID)
         {
             Server.Instance.UnspawnNetObjects(NetObjects
                 .Where(netObject => netObject.OwnerClientID == clientID)
@@ -258,7 +265,7 @@ namespace Netling
 
         private void OnClientStateChanged(Client.ClientState clientState)
         {
-            if(clientState == Client.ClientState.Disconnected)
+            if (clientState == Client.ClientState.Disconnected)
             {
                 if (Server.IsActive)
                     return; // keep hosting
@@ -270,39 +277,40 @@ namespace Netling
             }
         }
 
-        public T SpawnOnServer<T>(T networkBehaviourPrefab, Vector3 position, Quaternion rotation,
-            Scene scene = default, Transform parent = null, int ownerClientID = Server.ServerClientID)
-            where T : NetBehaviour
+        public T SpawnOnServer<T>(T prefab, Vector3 position, Quaternion rotation, Scene scene, Transform parent,
+            ClientID ownerClientID) where T : NetBehaviour
         {
             Server.AssertActive();
-            NetObject netObjectPrefab = networkBehaviourPrefab.NetObject;
+            NetObject netObjectPrefab = prefab.NetObject;
             return SpawnOnServer(netObjectPrefab, position, rotation, scene, parent, ownerClientID)
                 .GetComponent<T>();
         }
 
-        public NetObject SpawnOnServer(NetObject netObjectPrefab, Vector3 position, Quaternion rotation,
-            Scene scene = default, Transform parent = null, int ownerClientID = Server.ServerClientID)
+        public NetObject SpawnOnServer(NetObject prefab, Vector3 position, Quaternion rotation, Scene scene,
+            Transform parent, ClientID ownerClientID)
         {
             Server.AssertActive();
-            if (!_netObjectPrefabs.Contains(netObjectPrefab))
+            if (!_netObjectPrefabs.Contains(prefab))
             {
-                throw new Exception($"Failed to instantiate {netObjectPrefab}: Prefab not registered");
+                throw new Exception($"Failed to instantiate {prefab}: Prefab not registered");
             }
 
-            var prefabIndex = (ushort)_netObjectPrefabs.IndexOf(netObjectPrefab);
-            int id = _nextId++;
-            NetObject netObject =
-                netObjectPrefab.Create(id, prefabIndex, scene, parent, position, rotation, ownerClientID);
+            var prefabIndex = (ushort)_netObjectPrefabs.IndexOf(prefab);
+            NetObjectID id = _nextId++;
+            NetObject netObject = Instantiate(prefab, position, rotation, parent);
+            if (parent == null && scene.isLoaded) SceneManager.MoveGameObjectToScene(netObject.gameObject, scene);
+            netObject.Init(id, prefabIndex, ownerClientID);
 
             _objectsById.Add(id, netObject);
             _objectCount = _objectsById.Count;
+            Server.Instance.SendSpawnMessage(netObject);
             NetObjectAdded?.Invoke(netObject);
 
             return netObject;
         }
 
-        public NetObject SpawnOnClient(int id, ushort prefabIndex, Scene scene, Transform parent, Vector3 position,
-            Quaternion rotation, int ownerClientID)
+        public NetObject SpawnOnClient(NetObjectID id, ushort prefabIndex, Scene scene, Transform parent,
+            Vector3 position, Quaternion rotation, ClientID ownerClientID)
         {
             if (_netObjectPrefabs.Count < prefabIndex + 1)
                 throw new Exception($"Cannot instantiate network object with prefab index {prefabIndex}");
@@ -310,9 +318,8 @@ namespace Netling
             if (!_objectsById.ContainsKey(id))
             {
                 if (!scene.isLoaded) throw new ArgumentException($"Scene {scene} not loaded");
-                NetObject netObject =
-                    _netObjectPrefabs[prefabIndex].Create(id, prefabIndex, scene, parent, position, rotation,
-                        ownerClientID);
+                NetObject netObject = Instantiate(_netObjectPrefabs[prefabIndex], position, rotation);
+                netObject.Init(id, prefabIndex, ownerClientID);
                 _objectsById.Add(id, netObject);
                 _objectCount = _objectsById.Count;
                 NetObjectAdded?.Invoke(netObject);
@@ -321,12 +328,14 @@ namespace Netling
             return _objectsById[id];
         }
 
-        public void Unspawn(int netObjectID)
+        public void Unspawn(NetObjectID netObjectID)
         {
             if (_objectsById.TryGetValue(netObjectID, out NetObject netObject))
             {
-                if (netObject != null && netObject.gameObject != null)
+                if (netObject != null && netObject.gameObject != null && Application.isPlaying)
                     Destroy(netObject.gameObject);
+                if (netObject != null && netObject.gameObject != null && !Application.isPlaying)
+                    DestroyImmediate(netObject.gameObject);
                 _objectsById.Remove(netObjectID);
                 _objectCount = _objectsById.Count;
                 NetObjectRemoved?.Invoke(netObject);
@@ -338,7 +347,7 @@ namespace Netling
         /// </summary>
         /// <param name="netObjectID">The ID of the <see cref="NetObject"/> in question</param>
         /// <returns>true, iff the <see cref="NetObject"/> is registered</returns>
-        public bool Exists(int netObjectID)
+        public bool Exists(NetObjectID netObjectID)
         {
             return _objectsById.ContainsKey(netObjectID);
         }
@@ -350,7 +359,7 @@ namespace Netling
         /// <param name="netObjectID">The ID with which the <see cref="NetObject"/> is identified across the network</param>
         /// <returns>The <see cref="NetObject"/> with the given <paramref name="netObjectID"/></returns>
         /// <exception cref="ArgumentException">Thrown, if no <see cref="NetObject"/> with the given <paramref name="netObjectID"/> is registered</exception>
-        public NetObject Get(int netObjectID)
+        public NetObject Get(NetObjectID netObjectID)
         {
             if (_objectsById.TryGetValue(netObjectID, out NetObject netObject))
                 return netObject;

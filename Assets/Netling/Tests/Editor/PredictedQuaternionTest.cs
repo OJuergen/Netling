@@ -1,7 +1,7 @@
 ﻿using NUnit.Framework;
 using UnityEngine;
 
-namespace Netling.Tests
+namespace Netling.Editor.Tests
 {
     public class PredictedQuaternionTest
     {

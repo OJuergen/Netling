@@ -1,5 +1,6 @@
 {
     "name": "Netling.Editor.Tests",
+    "rootNamespace": "Netling.Editor.Tests",
     "references": [
         "GUID:95bff287bccaff940aa7eedfe374aa0d",
         "GUID:27619889b8ba8c24980f49ee34dbb44a",
