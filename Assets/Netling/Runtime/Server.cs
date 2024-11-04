@@ -60,7 +60,7 @@ namespace Netling
             _acceptAllClients = acceptAllClients;
             _useSimulationPipeline = useSimulationPipeline;
             _initialized = true;
-            _nextClientID = ClientID.Create(2);
+            _nextClientID = ClientID.FirstValidClient;
             NetObjectManager.Instance.Init();
         }
 
@@ -121,7 +121,7 @@ namespace Netling
                 _clientIDByConnection.Clear();
                 _connectionByClientID.Clear();
                 _acceptedClients.Clear();
-                _nextClientID = ClientID.Create(2);
+                _nextClientID = ClientID.FirstValidClient;
                 _lastPingTimes.Clear();
                 if (quitOnFail) Application.Quit(-1);
                 throw new NetException("Failed to bind to any port");
@@ -174,7 +174,7 @@ namespace Netling
                 Debug.Log($"Client connected. Assigning ID {clientID}.");
                 _serverDriver.BeginSend(_reliablePipeline, connection, out DataStreamWriter writer);
                 writer.WriteInt(Commands.AssignClientID);
-                writer.WriteInt(clientID.Value);
+                clientID.Serialize(ref writer);
                 _serverDriver.EndSend(writer);
                 ClientConnected?.Invoke(clientID);
             }
@@ -290,7 +290,7 @@ namespace Netling
                     case Commands.GameAction:
                     {
                         int gameActionID = streamReader.ReadInt();
-                        var clientID = ClientID.Create(streamReader.ReadInt());
+                        ClientID clientID = ClientID.Deserialize(ref streamReader);
                         float triggerTime = streamReader.ReadFloat();
                         try
                         {
@@ -447,7 +447,7 @@ namespace Netling
                         NetObject netObject = netObjects[objectIndex++];
                         objectWriter.WriteInt(netObject.ID.Value);
                         objectWriter.WriteUShort(netObject.PrefabIndex);
-                        objectWriter.WriteInt(netObject.OwnerClientID.Value);
+                        netObject.OwnerClientID.Serialize(ref objectWriter);
                         objectWriter.WriteVector3(netObject.transform.localPosition);
                         objectWriter.WriteQuaternion(netObject.transform.localRotation);
                         objectWriter.WriteInt(netObject.gameObject.scene.buildIndex);
@@ -710,7 +710,7 @@ namespace Netling
             var streamWriter = new DataStreamWriter(MaxBytesPerMessage, Allocator.Temp);
             streamWriter.WriteInt(Commands.GameAction);
             streamWriter.WriteInt(GameActionManager.Instance.GetID(gameAction));
-            streamWriter.WriteInt(clientID.Value);
+            clientID.Serialize(ref streamWriter);
             streamWriter.WriteFloat(triggerTime);
             streamWriter.WriteBool(true); // valid
             gameAction.SerializeParameters(ref streamWriter, parameters);
@@ -727,7 +727,7 @@ namespace Netling
             var streamWriter = new DataStreamWriter(MaxBytesPerMessage, Allocator.Temp);
             streamWriter.WriteInt(Commands.GameAction);
             streamWriter.WriteInt(GameActionManager.Instance.GetID(gameAction));
-            streamWriter.WriteInt(clientID.Value);
+            clientID.Serialize(ref streamWriter);
             streamWriter.WriteFloat(triggerTime);
             streamWriter.WriteBool(false); // invalid
             gameAction.SerializeParameters(ref streamWriter, parameters);

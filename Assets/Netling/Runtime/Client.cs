@@ -144,7 +144,7 @@ namespace Netling
                     {
                         case Commands.AssignClientID:
                         {
-                            ID = ClientID.Create(streamReader.ReadInt());
+                            ID = ClientID.Deserialize(ref streamReader);
                             Debug.Log($"Got assigned client ID {ID}");
                             _clientDriver.BeginSend(_reliablePipeline, _clientToServerConnection,
                                 out DataStreamWriter writer);
@@ -192,7 +192,7 @@ namespace Netling
                             {
                                 NetObjectID netObjID = NetObjectID.Deserialize(ref streamReader);
                                 ushort prefabIndex = streamReader.ReadUShort();
-                                var ownerClientID = new ClientID(streamReader.ReadInt());
+                                ClientID ownerClientID = ClientID.Deserialize(ref streamReader);
                                 Vector3 position = streamReader.ReadVector3();
                                 Quaternion rotation = streamReader.ReadQuaternion();
                                 int sceneBuildIndex = streamReader.ReadInt();
@@ -298,7 +298,7 @@ namespace Netling
                         {
                             if (IsHost) break;
                             int gameActionID = streamReader.ReadInt();
-                            var clientID = new ClientID(streamReader.ReadInt());
+                            ClientID clientID = ClientID.Deserialize(ref streamReader);
                             float triggerTime = streamReader.ReadFloat();
                             bool valid = streamReader.ReadBool();
                             try
