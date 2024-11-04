@@ -18,6 +18,7 @@ namespace Netling
         }
 
         private const int MaxBytesPerMessage = 1300; // 1400 causes errors on receiving side
+        private const string MulticastIP = "224.0.0.1";
 
         private static Client _instance;
         public static Client Instance => _instance ??= new Client();
@@ -85,8 +86,15 @@ namespace Netling
             SetEndpoint(IPAddress.Broadcast.ToString(), port, false);
             Connect();
         }
+        
+        public void MulticastConnect(ushort port)
+        {
+            SetEndpoint(MulticastIP, port, false);
+            Connect();
+        }
 
         public void BroadcastConnect() => BroadcastConnect(_port);
+        public void MulticastConnect() => MulticastConnect(_port);
 
         public void Connect()
         {
