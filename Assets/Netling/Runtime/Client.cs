@@ -26,7 +26,7 @@ namespace Netling
         public bool IsHost => Server.IsActive && IsConnected;
         public bool UseLocalhost { get; set; }
 
-        public ClientID ID { get; private set; }
+        public ClientID ID { get; private set; } = ClientID.Invalid;
         public event Action<ClientState> StateChanged;
 
         private ushort _port;
@@ -358,6 +358,7 @@ namespace Netling
                     SceneManager.sceneLoaded -= OnSceneLoaded;
                     _clientToServerConnection = default;
                     State = ClientState.Disconnected;
+                    ID = ClientID.Invalid;
                     StateChanged?.Invoke(State);
                 }
             }
@@ -522,6 +523,7 @@ namespace Netling
 
             _clientToServerConnection = default;
             State = ClientState.Disconnected;
+            ID = ClientID.Invalid;
             StateChanged?.Invoke(State);
             Debug.Log("Disconnected");
         }
@@ -530,6 +532,7 @@ namespace Netling
         {
             if (_clientDriver.IsCreated) _clientDriver.Dispose();
             State = ClientState.Disconnected;
+            ID = ClientID.Invalid;
             StateChanged?.Invoke(State);
         }
     }
