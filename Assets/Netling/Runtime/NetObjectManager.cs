@@ -318,7 +318,7 @@ namespace Netling
             if (!_objectsById.ContainsKey(id))
             {
                 if (!scene.isLoaded) throw new ArgumentException($"Scene {scene} not loaded");
-                NetObject netObject = Instantiate(_netObjectPrefabs[prefabIndex], position, rotation);
+                NetObject netObject = Instantiate(_netObjectPrefabs[prefabIndex], position, rotation, parent);
                 netObject.Init(id, prefabIndex, ownerClientID);
                 _objectsById.Add(id, netObject);
                 _objectCount = _objectsById.Count;
